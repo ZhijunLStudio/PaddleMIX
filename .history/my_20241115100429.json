@@ -1,0 +1,30 @@
+[
+    {
+        "id": "unique_id_1",
+        "image": "/home/lizhijun/PaddleMIX-develop/ppdiffusers/examples/PhotoMaker/examples/newton_man/newton_0.jpg", 
+        "conversations": [ 
+            {
+                "from": "human",
+                "value": "这是图片的描述或问题"
+            },
+            {
+                "from": "assistant",
+                "value": "这是助手的回答"
+            }
+        ]
+    },
+    {
+        "id": "unique_id_2",
+        "image": "/home/lizhijun/PaddleMIX-develop/ppdiffusers/examples/PhotoMaker/examples/newton_man/newton_0-.jpg",
+        "conversations": [
+            {
+                "from": "human",
+                "value": "Can you describe this image?"
+            },
+            {
+                "from": "assistant",
+                "value": "This is an image of..."
+            }
+        ]
+    }
+]

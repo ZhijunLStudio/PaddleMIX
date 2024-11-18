@@ -1,0 +1,16 @@
+[
+    {
+        "id": "unique_id_3",
+        "image": "/home/lizhijun/PaddleMIX-develop/paddlemix/demo_images/examples_image1.jpg",
+        "conversations": [
+            {
+                "from": "human",
+                "value": "Can you describe this image?"
+            },
+            {
+                "from": "assistant",
+                "value": "This is an image of..."
+            }
+        ]
+    }
+]
