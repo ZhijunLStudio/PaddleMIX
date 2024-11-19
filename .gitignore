@@ -87,3 +87,5 @@ log/
 # ImageNet
 imagenet-val/
 imagenet-val.tar
+
+.history/

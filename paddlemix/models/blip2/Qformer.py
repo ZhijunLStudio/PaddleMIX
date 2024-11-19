@@ -1067,12 +1067,15 @@ class BertLMHeadModel(BertPreTrainedModel):
             dtype="float32",
             default_initializer=paddle.nn.initializer.Normal(mean=0.0, std=config.initializer_range),
         )
+        print("train_in_satge1:", train_in_satge1)
         if train_in_satge1:
+            print("进来train_in_satge1啦")
             self.vision_proj = paddle.nn.Linear(in_features=config.hidden_size, out_features=config.embed_dim)
             self.text_proj = paddle.nn.Linear(in_features=config.hidden_size, out_features=config.embed_dim)
             self.itm_head = paddle.nn.Linear(in_features=config.hidden_size, out_features=2)
             self.resize_token_embeddings(kwargs.get("tokenizer_length"))
         else:
+            print("没进train_in_satge1")
             text_hidden_size = kwargs.get("text_hidden_size", 2560)
             self.language_projection = paddle.nn.Linear(in_features=config.hidden_size, out_features=text_hidden_size)
 

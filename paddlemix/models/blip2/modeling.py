@@ -94,6 +94,9 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
         self.visual_encoder = VisionTransformer(config=config.vision_config)
         self.freeze_vit = config.freeze_vit
         self.train_stage1 = False
+        
+        # config.set("train_mode") = "stage1"
+
         if self.freeze_vit:
             # freeze vit except the post layer norm layer.
             for name, param in self.visual_encoder.named_parameters():
@@ -459,6 +462,80 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
         return Blip2ForStage1ModelOutput(
             loss=loss_itc + loss_itm + loss_lm, loss_itc=loss_itc, loss_itm=loss_itm, loss_lm=loss_lm
         )
+
+
+    @paddle.no_grad()
+    def inference_stage1(self, pixel_values, text_input):
+        """
+        推理专用的stage1方法
+        """
+        text = text_input
+        image = pixel_values
+
+        # 获取 image embeds
+        image_embeds = self.Qformer.ln_vision(self.visual_encoder(image))
+        image_atts = paddle.ones(image_embeds.shape[:-1], dtype="int64")
+        query_tokens = self.Qformer.query_tokens.expand(shape=[image_embeds.shape[0], -1, -1])
+        
+        # Qformer 输出
+        query_output = self.Qformer.bert(
+            query_embeds=query_tokens,
+            encoder_hidden_states=image_embeds,
+            encoder_attention_mask=image_atts,
+            use_cache=True,
+            return_dict=True,
+        )
+        image_feats = paddle.nn.functional.normalize(
+            x=self.Qformer.vision_proj(query_output.last_hidden_state), axis=-1
+        )
+
+        # 获取 text embeds
+        text_tokens = self.tokenizer(
+            text,
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_txt_len,
+            return_attention_mask=True,
+            return_tensors="pd",
+        )
+        text_output = self.Qformer.bert(
+            text_tokens.input_ids, attention_mask=text_tokens.attention_mask, return_dict=True
+        )
+        text_feat = paddle.nn.functional.normalize(
+            self.Qformer.text_proj(text_output.last_hidden_state[:, 0, :]), axis=-1
+        )
+
+        # 生成ITM的logits
+        query_tokens_itm = self.Qformer.query_tokens.expand(shape=[text_tokens.input_ids.shape[0], -1, -1])
+        query_atts_itm = paddle.ones(shape=query_tokens_itm.shape[:-1], dtype="int64")
+        attention_mask_all = paddle.concat(x=[query_atts_itm, text_tokens.attention_mask], axis=1)
+        image_atts = paddle.ones(shape=image_embeds.shape[:-1], dtype="int64")
+        
+        output_itm = self.Qformer.bert(
+            text_tokens.input_ids,
+            query_embeds=query_tokens_itm,
+            attention_mask=attention_mask_all,
+            encoder_hidden_states=image_embeds,
+            encoder_attention_mask=image_atts,
+            return_dict=True,
+        )
+        vl_embeddings = output_itm.last_hidden_state[:, : query_tokens_itm.shape[1], :]
+        vl_output = self.Qformer.itm_head(vl_embeddings)
+        logits = vl_output.mean(axis=1)
+
+        print("logits:", logits)
+        
+        # 计算Softmax，将logits转化为概率
+        probabilities = paddle.nn.functional.softmax(logits, axis=-1)
+
+        # 匹配的概率 (类别 1 的概率)
+        matching_probability = probabilities[0, 1].numpy()
+
+        print("图文匹配概率:", matching_probability)
+
+        if self.return_itm_logits:
+            return logits  # 直接返回ITM logits
+
 
     @paddle.no_grad()
     def generate_stage1(

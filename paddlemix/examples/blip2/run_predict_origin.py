@@ -51,7 +51,7 @@ class DataArguments:
         default="/home/lizhijun/PaddleMIX-develop/paddlemix/demo_images/examples_image1.jpg", metadata={"help": "The name of input image."}
     )  # "http://images.cocodataset.org/val2017/000000039769.jpg"
     prompt: str = field(
-        default="a photo of person", metadata={"help": "The prompt of the image to be generated."}
+        default="describe the image", metadata={"help": "The prompt of the image to be generated."}
     )  # "Question: how many cats are there? Answer:"
 
 
@@ -114,33 +114,10 @@ class PreTrainingArguments(TrainingArguments):
         default=None,
         metadata={"help": "The path to model if you want to load weights from the specified path"},
     )
-    
-# def create_model(config, training_args=None):
-#     # 设置阶段及返回 ITM logits 的标志
-#     config.train_mode = "stage1"
-#     config.return_itm_logits = True
-#     # 加载模型
-#     model = Blip2ForConditionalGeneration.from_pretrained(
-#         pretrained_model_name_or_path=config.model_name_or_path,  # 确保路径有效
-#         config=config
-#     )
-#     return model
+
 
 def create_model(config, training_args=None):
-    # 创建配置对象并传递必要参数
-    # model_config = Blip2Config(
-    #     vision_config=config.vision_config,
-    #     qformer_config=config.qformer_config,
-    #     text_config=config.text_config,
-    #     train_mode="stage1",  # 显式设置
-    #     return_itm_logits=True,  # 显式设置
-    # )
-
-    # 使用配置对象初始化模型
-    model = Blip2ForConditionalGeneration.from_pretrained(
-        pretrained_model_name_or_path=config.model_name_or_path,
-        # config=model_config
-    )
+    model = Blip2ForConditionalGeneration.from_pretrained(config.model_name_or_path)
     return model
 
 
@@ -158,8 +135,6 @@ def main():
     model_args.data_world_rank = training_args.data_world_rank
     model_args.data_world_size = training_args.data_world_size
     paddle.set_device(training_args.device)
-
-    # 加载处理器
     prompt = data_args.prompt
     tokenizer_class = create_tokenizer(model_args.text_model_name_or_path)
     image_processor = BlipImageProcessor.from_pretrained(
@@ -170,8 +145,6 @@ def main():
     )
     text_processor_class.prompt = ""
     processor = Blip2Processor(image_processor, text_processor_class, tokenizer_class)
-
-    # 处理输入
     inputs = processor(
         images=image,
         text=prompt,
@@ -181,26 +154,17 @@ def main():
     )
     model_args.mp_degree = training_args.tensor_parallel_degree
     model_args.gradient_checkpointing = training_args.gradient_checkpointing
-
-    # 加载模型
     model = create_model(model_args)
-    # decorated = paddle.amp.decorate(models=[model.visual_encoder, model.language_model], optimizers=None, level="O2")
-    # model.visual_encoder, model.language_model = decorated
+    decorated = paddle.amp.decorate(models=[model.visual_encoder, model.language_model], optimizers=None, level="O2")
+    model.visual_encoder, model.language_model = decorated
     model.eval()
-
     if training_args.load_model_path is not None:
         load_model(training_args, model, ckpt_dir=os.path.join(training_args.load_model_path, "model_state.pdparams"))
-    # 获取 ITM 阶段 logits
-    with paddle.no_grad():
-        pixel_values = inputs["pixel_values"]
-        text_input_stage1 = prompt  # 文本输入直接传递到 ITM 阶段
-        print("text_input_stage1:", text_input_stage1)
-
-        # 调用 Stage1 模型，直接获取 logits
-        logits = model.inference_stage1(pixel_values=pixel_values, text_input=text_input_stage1)
-
-    # print("ITM logits:", logits)
-
+    generated_ids, scores = model.generate(**inputs)
+    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+    logger.info("Generate text: {}".format(generated_text))
+    print("scores:",scores)
+    return model
 
 
 def setdistenv(args):
