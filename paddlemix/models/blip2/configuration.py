@@ -269,9 +269,9 @@ class Blip2Config(PretrainedConfig):
         self.freeze_vit = kwargs.get("freeze_vit", True)
         self.mp_degree = kwargs.get("mp_gree", 1)
         self.use_decoder_only_language_model = kwargs.get("use_decoder_only_language_model", True)
-        # itm新增的参数
-        self.train_mode = "stage1"
-        # self.return_itm_logits = False
+        # train_mode 现在从 kwargs 中获取，如果没有传入则为 None
+        self.train_mode = kwargs.get("train_mode", None)
+
 
     @classmethod
     def from_vision_qformer_text_configs(

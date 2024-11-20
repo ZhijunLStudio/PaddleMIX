@@ -94,9 +94,6 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
         self.visual_encoder = VisionTransformer(config=config.vision_config)
         self.freeze_vit = config.freeze_vit
         self.train_stage1 = False
-        
-        # config.set("train_mode") = "stage1"
-
         if self.freeze_vit:
             # freeze vit except the post layer norm layer.
             for name, param in self.visual_encoder.named_parameters():
@@ -529,13 +526,10 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
         probabilities = paddle.nn.functional.softmax(logits, axis=-1)
 
         # 匹配的概率 (类别 1 的概率)
-        matching_probability = probabilities[0, 1].numpy()
+        matching_probability = probabilities[0, 0].numpy()
 
         print("图文匹配概率:", matching_probability)
-
-        if self.return_itm_logits:
-            return logits  # 直接返回ITM logits
-
+        return matching_probability
 
     @paddle.no_grad()
     def generate_stage1(

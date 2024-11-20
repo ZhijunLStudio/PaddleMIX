@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import random
 import sys
 
@@ -51,7 +51,7 @@ class DataArguments:
         default="/home/lizhijun/PaddleMIX-develop/paddlemix/demo_images/examples_image1.jpg", metadata={"help": "The name of input image."}
     )  # "http://images.cocodataset.org/val2017/000000039769.jpg"
     prompt: str = field(
-        default="a photo of person", metadata={"help": "The prompt of the image to be generated."}
+        default="smoking", metadata={"help": "The prompt of the image to be generated."}
     )  # "Question: how many cats are there? Answer:"
 
 
@@ -71,6 +71,7 @@ class ModelArguments:
         metadata={"help": "The type of text model to use (OPT, T5)."},
     )
     image_size: int = field(default=224, metadata={"help": " Image size for training. (default:224)"})
+    train_mode = "stage1"
 
 
 @dataclass
@@ -115,33 +116,22 @@ class PreTrainingArguments(TrainingArguments):
         metadata={"help": "The path to model if you want to load weights from the specified path"},
     )
     
-# def create_model(config, training_args=None):
-#     # 设置阶段及返回 ITM logits 的标志
-#     config.train_mode = "stage1"
-#     config.return_itm_logits = True
-#     # 加载模型
-#     model = Blip2ForConditionalGeneration.from_pretrained(
-#         pretrained_model_name_or_path=config.model_name_or_path,  # 确保路径有效
-#         config=config
-#     )
-#     return model
 
-def create_model(config, training_args=None):
-    # 创建配置对象并传递必要参数
-    # model_config = Blip2Config(
-    #     vision_config=config.vision_config,
-    #     qformer_config=config.qformer_config,
-    #     text_config=config.text_config,
-    #     train_mode="stage1",  # 显式设置
-    #     return_itm_logits=True,  # 显式设置
-    # )
 
-    # 使用配置对象初始化模型
+def create_model(model_args, training_args=None):
+    # If model_args has train_mode attribute, it will be passed to config
+    config_kwargs = {}
+    if hasattr(model_args, 'train_mode'):
+        config_kwargs['train_mode'] = model_args.train_mode
+
+    # Use from_pretrained with config_kwargs to pass additional parameters
     model = Blip2ForConditionalGeneration.from_pretrained(
-        pretrained_model_name_or_path=config.model_name_or_path,
-        # config=model_config
+        pretrained_model_name_or_path=model_args.model_name_or_path,
+        **config_kwargs  # This will pass train_mode to the config
     )
     return model
+
+
 
 
 def main():
@@ -181,6 +171,7 @@ def main():
     )
     model_args.mp_degree = training_args.tensor_parallel_degree
     model_args.gradient_checkpointing = training_args.gradient_checkpointing
+    
 
     # 加载模型
     model = create_model(model_args)
