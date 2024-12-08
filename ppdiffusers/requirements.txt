@@ -1,0 +1,18 @@
+paddlenlp>=3.0.0b2
+safetensors>=0.3.1
+ftfy
+regex
+Pillow
+opencv-python
+av
+# for test
+parameterized
+requests_mock
+omegaconf
+note_seq
+urllib3<=2.0.0
+einops>=0.6.1
+paddlesde
+ligo-segments
+huggingface_hub==0.23.0
+hf_transfer

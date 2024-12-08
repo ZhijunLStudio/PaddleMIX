@@ -1,0 +1,2 @@
+nohup: ignoring input
+/home/lizhijun/anaconda3/bin/python: Error while finding module specification for 'paddle.distributed.launch' (ModuleNotFoundError: No module named 'paddle')
