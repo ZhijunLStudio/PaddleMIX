@@ -17,7 +17,7 @@ def plot_data_statistics(data_statistics, output_dir):
     conversation_counts = [
         len(item.get("conversations", [])) for item in valid_items
     ]
-    
+
     # 计算第5百分位数和第95百分位数
     lower_percentile = np.percentile(conversation_counts, 5)
     upper_percentile = np.percentile(conversation_counts, 95)

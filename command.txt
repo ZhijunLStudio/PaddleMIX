@@ -1,0 +1,15 @@
+# lora合并
+CUDA_VISIBLE_DEVICES=4 python paddlemix/tools/merge_lora_params.py \
+--model_name_or_path ~/.paddlemix/models/paddlemix/llava/llava-v1.5-7b \
+--lora_path checkpoints/llava_sft_ckpts_1208 \
+--merge_model_path ./checkpoints/llava_test_sft_lora_merge_1209_val
+
+
+# 推理
+CUDA_VISIBLE_DEVICES=4 python paddlemix/examples/llava/run_predict.py \
+    --model-path checkpoints/llava_origin/llava-v1.5-7b \
+    --image-file "https://bj.bcebos.com/v1/paddlenlp/models/community/GroundingDino/000000004505.jpg" \
+    --fp16
+
+
+huggingface-cli download --resume-download MMMU/MMMU --local-dir ./checkpoints/MMMU --endpoint https://hf-mirror.com
