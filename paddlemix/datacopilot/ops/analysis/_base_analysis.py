@@ -31,8 +31,6 @@ def save_to_json(data, filename):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-from typing import Dict
-
 def count_data_statistics(dataset: MMDataset) -> Dict:
     """统计数据集的基本数量信息，包括异常数据"""
     

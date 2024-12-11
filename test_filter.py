@@ -1,27 +1,39 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+
 from paddlemix.datacopilot.core import MMDataset
-from paddlemix.datacopilot.ops.filter._image_base_filter import (
-    is_valid_image_aspect_ratio,
-    is_valid_image_resolution,
-    is_valid_image_file_size,
-    is_valid_image_hash,
-)
+from paddlemix.datacopilot.ops.filter._base_filter import valid_data_filter
+from paddlemix.datacopilot.ops.filter._image_clip_filter import CLIPFilterConfig
+from paddlemix.datacopilot.ops.filter._conversation_percentage_filter import conversation_percentage_filter
+from paddlemix.datacopilot.ops.filter._conversation_hash_filter import remove_text_duplicates
+
+# 数据集路径
+anno_path = 'datasets/llava/02_train_chatml_filter.json'
 
 # 加载数据集
-dataset = MMDataset.from_json('./llava_v1_5_mix665k.json')
-print(f"原始数据集大小: {len(dataset)}")
+print("Loading dataset...")
+dataset = MMDataset.from_json(anno_path)
+print("初始数据集数量为:", len(dataset))
 
-# 链式调用多个算子进行过滤
-filtered_dataset = (
-    dataset
-    .filter(is_valid_image_aspect_ratio, max_workers=8, progress=True)
-    .filter(lambda x: is_valid_image_resolution(x, max_width=1024, max_height=768), max_workers=8, progress=True)
-    .filter(lambda x: is_valid_image_file_size(x, max_size_kb=500), max_workers=8, progress=True)
-    .filter(is_valid_image_hash, max_workers=8, progress=True)
-    .nonempty()
-)
+# 0.过滤无效图像和文本
+# dataset = dataset.valid_data_filter()
 
-print(f"过滤后的数据集大小: {len(filtered_dataset)}")
+# 1.配置CLIP过滤器
+# clip_config = CLIPFilterConfig(
+#     model_name="paddlemix/CLIP/CLIP-ViT-L-14-laion2B-s32B-b82K",
+#     threshold=0.15,  # 设置相似度阈值
+#     batch_size=2560,  # 批量大小
+#     save_images=False  # 控制是否保存低置信度图像
+# )
 
-# 打印过滤后的数据集
-for item in filtered_dataset:
-    print(item)
+# 使用过滤器处理数据集并保存图片
+# dataset = dataset.image_clip_filter(config=clip_config)
+
+# 2.根据对话数的百分位数过滤
+# dataset = conversation_percentage_filter(dataset, min_percentile=5, max_percentile=95)
+
+dataset = remove_text_duplicates(dataset, method="simhash", threshold=0.75, num_perm=256, print_duplicates=False, max_workers=24)
+
+print("过滤后数据集数量为:", len(dataset))
+print("Dataset validation complete.")
+dataset.export_json(anno_path.replace('.json', '_filter1.json'))

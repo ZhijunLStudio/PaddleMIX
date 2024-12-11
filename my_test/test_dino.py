@@ -2,7 +2,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 from paddlemix.datacopilot.core import MMDataset
-from paddlemix.datacopilot.ops.filter._grounding_dino_filter import GroundingDinoConfig
+from paddlemix.datacopilot.ops.filter._image_groundingdino_filter import GroundingDinoConfig
 
 def main():
     # Load dataset

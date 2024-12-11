@@ -99,3 +99,4 @@ valid_images.7z
 checkpoints/
 magpie/
 cache/
+low_confidence_images/

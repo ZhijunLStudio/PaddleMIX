@@ -2,11 +2,11 @@ import json
 import random
 
 # 加载原始 JSON 文件
-with open('datasets/llava/llava_v1_5_mix665k.json', 'r', encoding='utf-8') as f:
+with open('datasets/llava/02_val_chatml_filter.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 # 计算要选取的数量（1%）
-num_samples = max(1, len(data) // 10000)  # 至少选取 1 条数据
+num_samples = max(1, len(data) // 10)  # 至少选取 1 条数据
 
 # 随机选择 1% 的数据
 random_samples = random.sample(data, num_samples)

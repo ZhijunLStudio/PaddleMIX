@@ -1,7 +1,10 @@
 from PIL import Image
+from ...core import T, MMDataset, register
 
 
-def validate_image(item):
+def image_compliance_operator(
+    item
+    ) -> bool:
     """
     验证数据集项中的图片是否可加载。
     
@@ -21,58 +24,12 @@ def validate_image(item):
         return False
 
 
-# def validate_conversation(item):
-#     """
-#     验证数据集项中的 'conversations' 是否符合角色交替规则，
-#     确保 'Human' 和 'GPT' 消息交替出现，并且数量匹配。
 
-#     参数:
-#         item (dict): 包含 'conversations' 键的数据集项。
-
-#     返回:
-#         bool: 如果对话有效，则返回 True，否则返回 False。
-#     """
-#     if 'conversations' not in item or not isinstance(item['conversations'], list):
-#         print(f"数据项中的对话格式无效: {item}")
-#         return False
-
-#     conversations = item['conversations']
-#     human_count = 0
-#     gpt_count = 0
-
-#     for conv in conversations:
-#         # 每对对话必须是包含两个元素的列表或元组
-#         if not isinstance(conv, (list, tuple)) or len(conv) != 2:
-#             print(f"数据项中的对话对结构无效: {item}")
-#             return False
-#         # 对话对的每一部分应为字符串
-#         if not all(isinstance(part, str) for part in conv):
-#             print(f"对话对应包含字符串: {item}")
-#             return False
-#         # 内容不能为空
-#         if not all(part.strip() for part in conv):
-#             print(f"数据项中的对话内容为空: {item}")
-#             return False
-#         # 统计 'Human' 和 'GPT' 出现的次数
-#         if 'Human' in conv[0]:
-#             human_count += 1
-#         if 'GPT' in conv[1]:
-#             gpt_count += 1
-
-#     # 确保 'Human' 和 'GPT' 的出现次数相同
-#     if human_count != gpt_count:
-#         print(f"对话中 'Human' 和 'GPT' 的数量不匹配: {item}")
-#         return False
-
-#     return True
-
-
-
-
-def validate_conversation(item):
+def conversation_compliance_operator(
+    item
+    ) -> bool:
     """
-    验证数据集项中的 'conversations' 是否符合角色交替规则，
-    确保 'Human' 和 'GPT' 消息交替出现，并且数量匹配。
+    验证数据集项中的 'conversations' 是否合规，
     如果包含 'USER' 或 'ASSISTANT'，则直接返回 False，并打印错误信息。
 
     参数:
@@ -86,8 +43,6 @@ def validate_conversation(item):
         return False
 
     conversations = item['conversations']
-    human_count = 0
-    gpt_count = 0
 
     for conv in conversations:
         # 检查是否包含 'USER' 或 'ASSISTANT'
@@ -110,15 +65,24 @@ def validate_conversation(item):
             print(f"数据项中的对话内容为空: {item}")
             return False
         
-        # 统计 'Human' 和 'GPT' 出现的次数
-        if 'Human' in conv[0]:
-            human_count += 1
-        if 'GPT' in conv[1]:
-            gpt_count += 1
-
-    # 确保 'Human' 和 'GPT' 的出现次数相同
-    if human_count != gpt_count:
-        print(f"对话中 'Human' 和 'GPT' 的数量不匹配: {item}")
-        return False
-
     return True
+
+
+@register()
+def valid_data_filter(dataset: MMDataset) -> MMDataset:
+    # 过滤不可加载图像
+    print("Filtering invalid images...")
+    dataset = dataset.filter(
+        func=image_compliance_operator, 
+        max_workers=8, 
+        progress=True
+    )
+
+    # 过滤无效文本
+    print("Filtering invalid conversations...")
+    dataset = dataset.filter(
+        func=conversation_compliance_operator, 
+        max_workers=8, 
+        progress=True
+    )
+    return MMDataset(dataset)
