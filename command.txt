@@ -1,17 +1,18 @@
 # lora合并
-CUDA_VISIBLE_DEVICES=4 python paddlemix/tools/merge_lora_params.py \
+CUDA_VISIBLE_DEVICES=5 python paddlemix/tools/merge_lora_params.py \
 --model_name_or_path ~/.paddlemix/models/paddlemix/llava/llava-v1.5-7b \
---lora_path checkpoints/llava_sft_ckpts_origin_1207 \
---merge_model_path ./checkpoints/llava_sft_lora_merge_1210_origin
+--lora_path checkpoints/llava_sft_ckpts_percentile_1210 \
+--merge_model_path ./checkpoints/llava_sft_lora_merge_1210_percentile
 
 
 # 把token相关的复制过来
-cp -r /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/chat_template.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/processor/  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/sentencepiece.bpe.model  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/special_tokens_map.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/tokenizer_config.json checkpoints/llava_sft_lora_merge_1210_origin
+cp -r /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/chat_template.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/processor/  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/sentencepiece.bpe.model  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/special_tokens_map.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/tokenizer_config.json ./checkpoints/llava_sft_lora_merge_1210_percentile
 
+export PYTHONPATH=$(pwd):$PYTHONPATH
 
 # 推理
-CUDA_VISIBLE_DEVICES=4 python paddlemix/examples/llava/run_predict.py \
-    --model-path ./checkpoints/llava_sft_lora_merge_1210_origin \
+CUDA_VISIBLE_DEVICES=5 python paddlemix/examples/llava/run_predict.py \
+    --model-path ./checkpoints/llava_sft_lora_merge_1210_percentile \
     --image-file datasets/mmmu/images/dev_Art_Theory_3_1.png \
     --fp16
 
@@ -20,7 +21,7 @@ CUDA_VISIBLE_DEVICES=4 python paddlemix/examples/llava/run_predict.py \
     --image-file datasets/mmmu/images/dev_Art_Theory_3_1.png \
     --fp16
 
-
+CUDA_VISIBLE_DEVICES=4 python paddlemix/examples/llava/run_predict_eval.py
 
 datasets/mmmu/images/dev_Diagnostics_and_Laboratory_Medicine_4_1.png
 datasets/mmmu/images/dev_Manage_3_1.png
@@ -30,4 +31,5 @@ huggingface-cli download --resume-download MMMU/MMMU --local-dir ./checkpoints/M
 
 
 # 训练过程可视化
-visualdl --logdir checkpoints/llava_sft_ckpts_1207/runs/Dec09_17-01-55_G19 --port 8010
+visualdl --logdir checkpoints/llava_sft_ckpts_percentile_1210/runs/Dec10_19-23-10_G19 --port 8010
+visualdl --logdir checkpoints/lora_ckpt/llava_sft_ckpts_1208/runs/Dec09_17-46-39_G19 --port 8011

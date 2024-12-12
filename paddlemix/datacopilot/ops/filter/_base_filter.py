@@ -85,4 +85,4 @@ def valid_data_filter(dataset: MMDataset) -> MMDataset:
         max_workers=8, 
         progress=True
     )
-    return MMDataset(dataset)
+    return dataset

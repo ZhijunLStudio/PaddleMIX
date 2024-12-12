@@ -14,6 +14,7 @@
 
 import argparse
 
+
 import paddle
 from paddlenlp.generation import TextStreamer
 

@@ -158,8 +158,6 @@ def remove_text_duplicates(
         order=False,
     )
 
-    # 去掉 None 的结果
-    filtered_items = [item for item in filtered_items if item]
 
     # 输出统计信息
     retained_pairs = total_pairs - removed_pairs
@@ -174,4 +172,4 @@ def remove_text_duplicates(
             print(f"原始文本: {original}")
             print("---")
 
-    return MMDataset(filtered_items)
+    return filtered_items

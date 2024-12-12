@@ -35,8 +35,7 @@ def conversation_percentage_filter(dataset: MMDataset, min_percentile: float, ma
         if min_threshold <= count <= max_threshold
     ]
 
-    return MMDataset(filtered_items)
-
+    return filtered_items
 
 
 
