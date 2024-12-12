@@ -8,9 +8,12 @@ from paddlemix.datacopilot.ops.filter._conversation_percentage_filter import con
 from paddlemix.datacopilot.ops.filter._conversation_hash_filter import remove_text_duplicates
 from paddlemix.datacopilot.ops.filter._image_filesize_filter import image_filesize_filter
 from paddlemix.datacopilot.ops.filter._image_hash_filter import image_hash_filter
+from paddlemix.datacopilot.ops.filter._image_ration_filter import image_ration_filter
+from paddlemix.datacopilot.ops.filter._image_resolution_filter import image_resolution_filter
+from paddlemix.datacopilot.ops.filter._conversation_length_filter import conversation_length_filter
 
 # 数据集路径
-anno_path = 'datasets/llava/02_val_chatml_filter.json'
+anno_path = 'datasets/llava/02_train_chatml_filter.json'
 
 # 加载数据集
 print("Loading dataset...")
@@ -41,9 +44,18 @@ print("初始数据集数量为:", len(dataset))
 # dataset = image_filesize_filter(dataset)
 
 # 5.图像哈希过滤
-dataset = image_hash_filter(dataset, "average_hash")
+# dataset = image_hash_filter(dataset)
+
+# 6.图像宽高比过滤
+# dataset = image_ration_filter(dataset)
+
+# 7.图像分辨率大小过滤
+# dataset = dataset.image_resolution_filter()
+
+# 8.会话长度过滤
+dataset = dataset.conversation_length_filter()
 
 print("过滤后数据集数量为:", len(dataset))
 print("Dataset validation complete.")
-# dataset.export_json(anno_path.replace('.json', '_filter1.json'))
-dataset.export_json("test.json")
+dataset.export_json(anno_path.replace('.json', '_filter1.json'))
+# dataset.export_json("test.json")

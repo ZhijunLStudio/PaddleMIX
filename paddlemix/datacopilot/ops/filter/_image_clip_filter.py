@@ -58,7 +58,7 @@ def clip_process_batch(
 
 def clean_question(question: str) -> str:
     """清理问题文本，去掉 <image> 占位符和多余换行"""
-    return question.replace("<image>", "").replace("\n", "").strip()
+    return question.replace("<image>", "").replace("\n<image>", " ").replace("<image>\n", " ").strip()
 
 
 def format_text(question: str, answer: str) -> str:

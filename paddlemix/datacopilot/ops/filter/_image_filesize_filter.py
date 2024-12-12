@@ -40,7 +40,7 @@ def is_valid_image_file_size(
 @register()
 def image_filesize_filter(
     dataset: MMDataset, 
-    min_size_kb: Optional[float] = 15, 
+    min_size_kb: Optional[float] = 10, 
     max_size_kb: Optional[float] = None
 ) -> MMDataset:
     print("正在过滤文件大小不符合要求的图像...")

@@ -16,7 +16,7 @@ def preprocess_text(text: str) -> str:
     返回:
         str: 清理后的文本。
     """
-    return text.replace("<image>", "").replace("\n", " ").strip()
+    return text.replace("<image>", "").replace("\n<image>", " ").replace("<image>\n", " ").strip()
 
 
 def simhash_duplicate_operator(

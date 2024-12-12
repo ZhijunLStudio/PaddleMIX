@@ -26,8 +26,9 @@ def main():
     # 模型路径列表
     model_paths = [
         "checkpoints/infer_ckpt/llava-v1.5-7b",
-        "checkpoints/infer_ckpt/llava_sft_lora_merge_1210_origin",
-        "checkpoints/infer_ckpt/llava_sft_lora_merge_1210_percentile"
+        # "checkpoints/infer_ckpt/llava_sft_lora_merge_1210_origin",
+        # "checkpoints/infer_ckpt/llava_sft_lora_merge_1210_percentile"
+        "checkpoints/infer_ckpt/simhash_1211"
     ]
 
     # 固定问题和图片路径
