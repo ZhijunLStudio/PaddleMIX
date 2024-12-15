@@ -47,6 +47,10 @@ def clip_process_batch(
         image_tensor = processed_inputs["image"]
         input_ids = processed_inputs["input_ids"]
 
+        print(f"Image tensor shape: {image_tensor.shape}")
+        print(f"Text prompt shape: {len(text_prompts)}")
+        print(f"Tokenized output shape: {input_ids.shape}")
+
         with paddle.no_grad():
             similarities = model.clip_score(image=image_tensor, input_ids=input_ids)
 

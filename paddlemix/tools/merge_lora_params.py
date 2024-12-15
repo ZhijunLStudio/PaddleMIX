@@ -13,13 +13,6 @@
 # limitations under the License.
 import argparse
 
-import sys
-import os
-
-# 获取当前脚本所在目录
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# 添加 paddlemix 的根目录到 Python 模块搜索路径
-sys.path.insert(0, os.path.join(current_dir, "..", ".."))
 
 import paddle
 from paddlenlp.peft import LoRAConfig, LoRAModel

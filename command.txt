@@ -1,12 +1,12 @@
 # lora合并
 CUDA_VISIBLE_DEVICES=5 python paddlemix/tools/merge_lora_params.py \
---model_name_or_path ~/.paddlemix/models/paddlemix/llava/llava-v1.5-7b \
---lora_path checkpoints/lora_ckpt/llava_sft_ckpts_simhash_1211 \
---merge_model_path checkpoints/infer_ckpt/simhash_1211
+--model_name_or_path paddlemix/llava/llava-v1.5-7b \
+--lora_path checkpoints/lora_ckpt/llava_sft_ckpts_origin_1207 \
+--merge_model_path checkpoints/infer_ckpt/test_1212
 
 
 # 把token相关的复制过来
-cp -r /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/chat_template.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/processor/  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/sentencepiece.bpe.model  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/special_tokens_map.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/tokenizer_config.json checkpoints/infer_ckpt/simhash_1211
+cp -r /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/chat_template.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/processor/  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/sentencepiece.bpe.model  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/special_tokens_map.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/tokenizer_config.json checkpoints/infer_ckpt/test_1212
 
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
@@ -15,8 +15,8 @@ CUDA_VISIBLE_DEVICES=4 python paddlemix/examples/llava/run_predict_eval.py
 
 
 CUDA_VISIBLE_DEVICES=5 python paddlemix/examples/llava/run_predict.py \
-    --model-path checkpoints/infer_ckpt/simhash_1211 \
-    --image-file datasets/mmmu/images/dev_Art_Theory_3_1.png \
+    --model-path /home/lizhijun/llm/PaddleMix/checkpoints/infer_ckpt/test_1212 \
+    --image-file /home/lizhijun/llm/PaddleMix/datasets/mmmu/images/dev_Art_Theory_3_1.png \
     --fp16
 
 CUDA_VISIBLE_DEVICES=4 python paddlemix/examples/llava/run_predict.py \

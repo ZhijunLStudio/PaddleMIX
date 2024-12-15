@@ -1,12 +1,12 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 from paddlemix.datacopilot.core import MMDataset
 from paddlemix.datacopilot.ops.filter._image_groundingdino_filter import GroundingDinoConfig
 
 def main():
     # Load dataset
-    dataset = MMDataset.from_json('./my.json')
+    dataset = MMDataset.from_json('random_samples.json')
     print(f"Original dataset size: {len(dataset)}")
 
     # Configure Grounding DINO parameters
@@ -14,16 +14,16 @@ def main():
         box_threshold=0.3,  # 调整对象检测的置信度阈值
         min_objects=1,       # 最少检测对象数
         max_objects=4,       # 最多检测对象数
-        min_aspect_ratio=0.1,# 最小宽高比
-        max_aspect_ratio=5.0 # 最大宽高比
-        
+        # min_aspect_ratio=0.25,# 最小宽高比
+        # max_aspect_ratio=4.0, # 最大宽高比
+        # batch_size = 16  # 批量大小
     )
 
     # Process dataset with chained operations
     processed_dataset = (
         dataset
         .filter_by_dino(
-            prompt="", 
+            prompt="person",
             config=config
         )
         .nonempty()  # 移除空值

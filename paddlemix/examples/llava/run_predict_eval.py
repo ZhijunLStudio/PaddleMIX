@@ -25,16 +25,19 @@ def main():
 
     # 模型路径列表
     model_paths = [
-        "checkpoints/infer_ckpt/llava-v1.5-7b",
+        # "checkpoints/infer_ckpt/llava_simhash_1211",
         # "checkpoints/infer_ckpt/llava_sft_lora_merge_1210_origin",
-        # "checkpoints/infer_ckpt/llava_sft_lora_merge_1210_percentile"
-        "checkpoints/infer_ckpt/simhash_1211"
+        "checkpoints/infer_ckpt/llava_sft_lora_merge_1210_percentile",
+        "checkpoints/infer_ckpt/llava_phash_1212"
+        # "checkpoints/infer_ckpt/llava-v1.5-7b"
     ]
 
     # 固定问题和图片路径
     questions = [
-        "Can you describe the main content of this image?",
-        "图片中是否有可见的文字？如果有，文字内容是什么？",
+        # "Can you describe the main content of this image?",
+        "你能描述一下这张图片的主要内容吗？",
+        # "图片中是否有可见的文字？如果有，文字内容是什么？",
+        "Is there any text visible in the image? If so, what does it say?"
         # "图像中的主要人物或物体在做什么？"
     ]
     image_files = [
