@@ -210,5 +210,5 @@ def image_clip_filter(
     print(f"保留高置信度花费时间{(t3-t2)*1000}ms")
 
 
-    return filtered_items
+    return MMDataset(filtered_items)
 
