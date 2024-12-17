@@ -14,9 +14,17 @@ from paddlemix.datacopilot.ops.filter._conversation_length_filter import convers
 from paddlemix.datacopilot.ops.filter._alphanumeric_ratio_filter import alphanumeric_ratio_filter
 from paddlemix.datacopilot.ops.filter._average_line_length_filter import average_line_length_filter
 from paddlemix.datacopilot.ops.filter._char_ngram_repetition_filter import char_ngram_repetition_filter
+from paddlemix.datacopilot.ops.filter._language_id_filter import language_id_filter
+from paddlemix.datacopilot.ops.filter._maximum_line_length_filter import maximum_line_length_filter
+from paddlemix.datacopilot.ops.filter._perplexity_filter import perplexity_filter
+from paddlemix.datacopilot.ops.filter._special_characters_filter import special_characters_filter
+from paddlemix.datacopilot.ops.filter._stopwords_ratio_filter import stopwords_ratio_filter
+from paddlemix.datacopilot.ops.filter._text_action_filter import text_action_filter
+from paddlemix.datacopilot.ops.filter._text_entity_dependency_filter import text_entity_dependency_filter
+from paddlemix.datacopilot.ops.filter._token_num_filter import token_num_filter
 
 # 数据集路径
-anno_path = 'datasets/llava/02_train_chatml_filter.json'
+anno_path = 'datasets/llava/02_val_chatml_filter.json'
 
 # 加载数据集
 print("Loading dataset...")
@@ -65,7 +73,38 @@ print("初始数据集数量为:", len(dataset))
 # dataset = dataset.average_line_length_filter()
 
 # 11.n-gram过滤
-dataset = dataset.char_ngram_repetition_filter()
+# dataset = dataset.char_ngram_repetition_filter()
+
+
+# 12.语言id过滤
+# dataset = dataset.language_id_filter()
+
+
+# 13.过滤掉最大行长度过小的会话
+# dataset = dataset.maximum_line_length_filter()
+
+# 14.文本困惑度计算
+# dataset = dataset.perplexity_filter()
+
+
+# 15.特殊字符过滤
+# dataset = dataset.special_characters_filter()
+
+
+
+# 16.停用词过滤
+# dataset = dataset.stopwords_ratio_filter()
+
+
+# 17.动词检测
+# dataset = dataset.text_action_filter()
+
+# 18.文本实体依赖性过滤
+dataset = dataset.text_entity_dependency_filter()
+
+# 19.token数量过滤
+# dataset = dataset.token_num_filter()
+
 
 print("过滤后数据集数量为:", len(dataset))
 print("Dataset validation complete.")

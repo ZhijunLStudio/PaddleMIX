@@ -61,7 +61,7 @@ def char_ngram_repetition_filter(
     dataset, 
     rep_len: Optional[int] = 10, 
     min_ratio: Optional[float] = 0.0, 
-    max_ratio: Optional[float] = 0.1
+    max_ratio: Optional[float] = 0.5
 ) -> MMDataset:
     """
     根据会话的字符 n-gram 重复比例过滤数据集。
@@ -82,7 +82,7 @@ def char_ngram_repetition_filter(
     # 调用 dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
-        max_workers=1, 
+        max_workers=8, 
         progress=True
     )
     
