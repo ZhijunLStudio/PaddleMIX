@@ -22,6 +22,8 @@ from paddlemix.datacopilot.ops.filter._stopwords_ratio_filter import stopwords_r
 from paddlemix.datacopilot.ops.filter._text_action_filter import text_action_filter
 from paddlemix.datacopilot.ops.filter._text_entity_dependency_filter import text_entity_dependency_filter
 from paddlemix.datacopilot.ops.filter._token_num_filter import token_num_filter
+from paddlemix.datacopilot.ops.filter._word_ngram_repetition_filter import word_ngram_repetition_filter
+from paddlemix.datacopilot.ops.filter._word_num_filter import word_num_filter
 
 # 数据集路径
 anno_path = 'datasets/llava/02_val_chatml_filter.json'
@@ -75,10 +77,8 @@ print("初始数据集数量为:", len(dataset))
 # 11.n-gram过滤
 # dataset = dataset.char_ngram_repetition_filter()
 
-
 # 12.语言id过滤
 # dataset = dataset.language_id_filter()
-
 
 # 13.过滤掉最大行长度过小的会话
 # dataset = dataset.maximum_line_length_filter()
@@ -86,24 +86,28 @@ print("初始数据集数量为:", len(dataset))
 # 14.文本困惑度计算
 # dataset = dataset.perplexity_filter()
 
-
 # 15.特殊字符过滤
 # dataset = dataset.special_characters_filter()
 
-
-
 # 16.停用词过滤
 # dataset = dataset.stopwords_ratio_filter()
-
 
 # 17.动词检测
 # dataset = dataset.text_action_filter()
 
 # 18.文本实体依赖性过滤
-dataset = dataset.text_entity_dependency_filter()
+# dataset = dataset.text_entity_dependency_filter()
 
 # 19.token数量过滤
 # dataset = dataset.token_num_filter()
+
+
+# 20.基于词的n-gram过滤
+# dataset = dataset.word_ngram_repetition_filter()
+
+# 21.基于单词数量过滤
+dataset = dataset.word_num_filter()
+
 
 
 print("过滤后数据集数量为:", len(dataset))

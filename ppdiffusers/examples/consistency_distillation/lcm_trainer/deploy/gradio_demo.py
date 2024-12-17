@@ -21,7 +21,7 @@ import time
 
 import gradio as gr
 import paddle
-from infer import create_pipe, parse_arguments
+from my_test.infer import create_pipe, parse_arguments
 
 lock = asyncio.Lock()
 

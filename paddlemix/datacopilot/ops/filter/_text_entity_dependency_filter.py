@@ -87,7 +87,7 @@ def is_entity_dependency_valid(item, nlp, min_dependency_num: int = 1, any_or_al
 def text_entity_dependency_filter(
     dataset, 
     lang: str = 'en', 
-    min_dependency_num: Optional[int] = 10, 
+    min_dependency_num: Optional[int] = 2, 
     any_or_all: str = 'any'
 ) -> MMDataset:
     """
