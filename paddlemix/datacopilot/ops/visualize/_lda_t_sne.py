@@ -8,14 +8,19 @@ import matplotlib.pyplot as plt
 from typing import List, Dict, Optional
 from ...core import T, MMDataset, register
 
+
 @register()
 def extract_text_for_lda(item: T) -> Optional[str]:
     """从对话中提取文本，用于主题建模."""
     conversations = item.get("conversations", [])
     text = []
     for convo in conversations:
-        text.append(convo["value"])
+        # 假设每个会话是一个包含问题和答案的列表，提取文本部分
+        question, answer = convo
+        text.append(question)
+        text.append(answer)
     return " ".join(text)
+
 
 @register()
 def lda_topic_clustering(
@@ -60,7 +65,7 @@ def lda_topic_clustering(
     plt.xlabel("T-SNE Dimension 1")
     plt.ylabel("T-SNE Dimension 2")
     plt.savefig(output_plot)
-    plt.show()
+
 
     return {
         "lda_result": lda_result,

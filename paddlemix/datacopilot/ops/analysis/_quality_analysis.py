@@ -1,7 +1,5 @@
 from paddlenlp.transformers import AutoTokenizer, AutoModelForCausalLM
 from paddlemix.datacopilot.core import MMDataset, register
-import os
-from collections import Counter
 from tqdm import tqdm
 from typing import Dict, List
 
@@ -26,82 +24,90 @@ def load_model(model_name: str):
 
 def evaluate_image_caption(
     dataset: MMDataset, 
-    model_name: str = "Qwen/Qwen2.5-0.5B", 
-    selected_metrics: List[str] = None
+    model_name: str = "Qwen/Qwen2.5-0.5B"
 ) -> Dict:
     """
     根据指定的指标评估图文质量。
     :param dataset: MMDataset 数据集
     :param model_name: 模型名称
-    :param selected_metrics: 指定要使用的指标，默认为 all
     :return: 每个数据项的评估结果
     """
-    # 如果未指定指标，默认使用所有指标
-    if selected_metrics is None:
-        selected_metrics = list(CRITERIA_PROMPTS.keys())
-    
     # 加载模型
     tokenizer, model = load_model(model_name)
     
     # 存储最终结果
     results = {}
 
+    # 默认开启的评估指标
+    selected_metrics = list(CRITERIA_PROMPTS.keys())
+
+    # 分批次进行推理，每次处理4个数据
+    batch_size = 1
+    batch_data = []
+
     for item in tqdm(dataset):
-        item_id = item["id"]
+        item_id = item["image"]  # 使用 image 作为 item_id
         conversations = item["conversations"]
         
-        # 遍历每个问答对
-        for idx, conversation in enumerate(conversations):
-            question = conversation["from"]  # 获取提问者
-            answer = conversation["value"]  # 获取回答
+        # 拼接每个 item 下所有的问答对
+        full_caption = ""
+        for conversation in conversations:
+            question, answer = conversation
+            question = question.replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
+            full_caption += f"Question: {question}\nAnswer: {answer}\n"
+
+        # 对每个 selected_metric 进行评估
+        for metric in selected_metrics:
+            criteria = CRITERIA_PROMPTS[metric]
+            aspect = metric.replace("_", " ")
+            caption = full_caption
+
+            # 生成完整的 prompt
+            full_prompt = DEFAULT_PROMPT_TEMPLATE.format(
+                caption=caption, 
+                criteria=criteria, 
+                aspect=aspect
+            )
             
-            if question != "gpt":
-                continue
-            
-            # 对每个选定的指标生成评估
-            for metric in selected_metrics:
-                criteria = CRITERIA_PROMPTS[metric]
-                aspect = metric.replace("_", " ")
-                caption = answer
-                
-                # 生成完整的 prompt
-                full_prompt = DEFAULT_PROMPT_TEMPLATE.format(
-                    caption=caption, 
-                    criteria=criteria, 
-                    aspect=aspect
-                )
-                
+            # 将生成的 prompt 存储到批次中
+            batch_data.append(full_prompt)
+
+            # 当批次大小达到 batch_size 时，进行推理
+            if len(batch_data) == batch_size:
+                print("batch_data:", batch_data)
                 # 使用 tokenizer 编码输入
-                input_features = tokenizer(full_prompt, return_tensors="pd")
-                
+                input_features = tokenizer(batch_data, return_tensors="pd", padding=True)
+
                 # 模型生成输出
                 outputs = model.generate(**input_features, max_length=256)
-                
-                # 解码生成结果
-                decoded_output = tokenizer.batch_decode(outputs[0], skip_special_tokens=True)[0]
 
-                
+                # 解码生成结果
+                decoded_outputs = tokenizer.batch_decode(outputs[0], skip_special_tokens=True)
+
                 # 存储结果
-                if item_id not in results:
-                    results[item_id] = {}
-                if idx not in results[item_id]:
-                    results[item_id][idx] = {}
-                results[item_id][idx][metric] = decoded_output
+                for idx, decoded_output in enumerate(decoded_outputs):
+                    # 这里根据 item_id 和 metric 来存储结果
+                    if item_id not in results:
+                        results[item_id] = {}
+                    results[item_id][metric] = decoded_output
+                    print(f"item_id:{item_id}, decoded_output:{decoded_output}")
+
+                # 清空当前批次
+                batch_data = []
+                print("----------------------------------")
 
     return results
 
 @register()
-def analyze_image_caption_with_metrics(dataset: MMDataset, model_name: str, selected_metrics: List[str] = None):
+def analyze_image_caption_with_metrics(dataset: MMDataset, model_name: str):
     """
     分析多轮对话的图文描述质量。
     """
-    results = evaluate_image_caption(dataset, model_name, selected_metrics)
+    results = evaluate_image_caption(dataset, model_name)
     
     # 打印或存储最终结果
-    for item_id, conversations in results.items():
-        print(f"Item ID: {item_id}")
-        for idx, metrics in conversations.items():
-            print(f"  Round {idx}:")
-            for metric, output in metrics.items():
-                print(f"    {metric}: {output}")
+    # for item_id, metrics in results.items():
+    #     print(f"Item ID: {item_id}")
+    #     for metric, output in metrics.items():
+    #         print(f"  {metric}: {output}")
     return results

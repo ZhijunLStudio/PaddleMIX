@@ -5,10 +5,10 @@ import nltk
 from nltk.corpus import stopwords
 
 # 下载 NLTK 的停用词资源
-nltk.download('stopwords')
+# nltk.download('stopwords')
 
 # 获取停用词列表
-stop_words = set(stopwords.words('english'))
+# stop_words = set(stopwords.words('english'))
 
 
 def is_stopwords_ratio_valid(item, min_ratio: float = 0.25) -> bool:

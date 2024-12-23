@@ -2,36 +2,41 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 from paddlemix.datacopilot.core import MMDataset
+from paddlemix.datacopilot.ops.convert._llava_convert import llava_convert
 from paddlemix.datacopilot.ops.filter._base_filter import valid_data_filter
 from paddlemix.datacopilot.ops.filter._image_clip_filter import CLIPFilterConfig
-from paddlemix.datacopilot.ops.filter._conversation_percentage_filter import conversation_percentage_filter
-from paddlemix.datacopilot.ops.filter._conversation_hash_filter import remove_text_duplicates
-from paddlemix.datacopilot.ops.filter._image_filesize_filter import image_filesize_filter
-from paddlemix.datacopilot.ops.filter._image_hash_filter import image_hash_filter
-from paddlemix.datacopilot.ops.filter._image_ration_filter import image_ration_filter
-from paddlemix.datacopilot.ops.filter._image_resolution_filter import image_resolution_filter
-from paddlemix.datacopilot.ops.filter._conversation_length_filter import conversation_length_filter
-from paddlemix.datacopilot.ops.filter._alphanumeric_ratio_filter import alphanumeric_ratio_filter
-from paddlemix.datacopilot.ops.filter._average_line_length_filter import average_line_length_filter
-from paddlemix.datacopilot.ops.filter._char_ngram_repetition_filter import char_ngram_repetition_filter
-from paddlemix.datacopilot.ops.filter._language_id_filter import language_id_filter
-from paddlemix.datacopilot.ops.filter._maximum_line_length_filter import maximum_line_length_filter
-from paddlemix.datacopilot.ops.filter._perplexity_filter import perplexity_filter
-from paddlemix.datacopilot.ops.filter._special_characters_filter import special_characters_filter
-from paddlemix.datacopilot.ops.filter._stopwords_ratio_filter import stopwords_ratio_filter
-from paddlemix.datacopilot.ops.filter._text_action_filter import text_action_filter
-from paddlemix.datacopilot.ops.filter._text_entity_dependency_filter import text_entity_dependency_filter
-from paddlemix.datacopilot.ops.filter._token_num_filter import token_num_filter
-from paddlemix.datacopilot.ops.filter._word_ngram_repetition_filter import word_ngram_repetition_filter
-from paddlemix.datacopilot.ops.filter._word_num_filter import word_num_filter
+# from paddlemix.datacopilot.ops.filter._conversation_percentage_filter import conversation_percentage_filter
+# from paddlemix.datacopilot.ops.filter._conversation_hash_filter import remove_text_duplicates
+# from paddlemix.datacopilot.ops.filter._image_filesize_filter import image_filesize_filter
+# from paddlemix.datacopilot.ops.filter._image_hash_filter import image_hash_filter
+# from paddlemix.datacopilot.ops.filter._image_ration_filter import image_ration_filter
+# from paddlemix.datacopilot.ops.filter._image_resolution_filter import image_resolution_filter
+# from paddlemix.datacopilot.ops.filter._conversation_length_filter import conversation_length_filter
+# from paddlemix.datacopilot.ops.filter._alphanumeric_ratio_filter import alphanumeric_ratio_filter
+# from paddlemix.datacopilot.ops.filter._average_line_length_filter import average_line_length_filter
+# from paddlemix.datacopilot.ops.filter._char_ngram_repetition_filter import char_ngram_repetition_filter
+# from paddlemix.datacopilot.ops.filter._language_id_filter import language_id_filter
+# from paddlemix.datacopilot.ops.filter._maximum_line_length_filter import maximum_line_length_filter
+# from paddlemix.datacopilot.ops.filter._perplexity_filter import perplexity_filter
+# from paddlemix.datacopilot.ops.filter._special_characters_filter import special_characters_filter
+# from paddlemix.datacopilot.ops.filter._stopwords_ratio_filter import stopwords_ratio_filter
+# from paddlemix.datacopilot.ops.filter._text_action_filter import text_action_filter
+# from paddlemix.datacopilot.ops.filter._text_entity_dependency_filter import text_entity_dependency_filter
+# from paddlemix.datacopilot.ops.filter._token_num_filter import token_num_filter
+# from paddlemix.datacopilot.ops.filter._word_ngram_repetition_filter import word_ngram_repetition_filter
+# from paddlemix.datacopilot.ops.filter._word_num_filter import word_num_filter
 
 # 数据集路径
-anno_path = 'datasets/llava/02_val_chatml_filter.json'
+anno_path = 'datasets/llava/12_train_chatml_filter_clip.json'
 
 # 加载数据集
 print("Loading dataset...")
 dataset = MMDataset.from_json(anno_path)
 print("初始数据集数量为:", len(dataset))
+
+
+# 转换算子
+# dataset = dataset.llava_convert()
 
 # 0.过滤无效图像和文本
 # dataset = dataset.valid_data_filter()
@@ -44,7 +49,7 @@ print("初始数据集数量为:", len(dataset))
 #     save_images=False  # 控制是否保存低置信度图像
 # )
 
-# 使用过滤器处理数据集并保存图片
+# # 使用过滤器处理数据集并保存图片
 # dataset = dataset.image_clip_filter(config=clip_config)
 
 # 2.根据对话数的百分位数过滤
@@ -106,11 +111,13 @@ print("初始数据集数量为:", len(dataset))
 # dataset = dataset.word_ngram_repetition_filter()
 
 # 21.基于单词数量过滤
-dataset = dataset.word_num_filter()
+# dataset = dataset.word_num_filter()
 
 
+
+dataset = dataset.nonempty()
 
 print("过滤后数据集数量为:", len(dataset))
 print("Dataset validation complete.")
-dataset.export_json(anno_path.replace('.json', '_filter1.json'))
+dataset.export_json(anno_path.replace('.json', '_filter-noempty.json'))
 # dataset.export_json("test.json")
