@@ -20,7 +20,7 @@ class CLIPFilterConfig:
     model_name: str = "paddlemix/CLIP/CLIP-ViT-L-14-laion2B-s32B-b82K"
     threshold: float = 0.25
     batch_size: int = 8  # 批量大小
-    save_images: bool = True  # 是否保存低置信度图像
+    save_images: bool = False  # 是否保存低置信度图像
     save_dir: str = "./low_confidence_images" # 保存低置信度图像的目录
 
 
