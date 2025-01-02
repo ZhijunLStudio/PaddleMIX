@@ -1,6 +1,3 @@
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
-
 from paddlemix.datacopilot.core import MMDataset
 from paddlemix.datacopilot.ops.convert._llava_convert import llava_convert
 

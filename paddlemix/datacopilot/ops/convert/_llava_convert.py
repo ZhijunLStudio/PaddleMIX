@@ -1,5 +1,5 @@
-from typing import List, Dict
-from ...core import T, MMDataset, register
+from typing import Dict
+from ...core import MMDataset, register
 from functools import partial
 
 # Define the conversion function
@@ -54,8 +54,5 @@ def llava_convert(dataset: MMDataset, image_path_prefix='datasets/llava/valid_im
         max_workers=8, 
         progress=True
     )
-    
-    # Filter out None items
-    dataset = dataset.nonempty()  # Use nonempty to filter out None values
     
     return dataset

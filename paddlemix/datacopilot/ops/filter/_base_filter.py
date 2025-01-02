@@ -1,68 +1,63 @@
 from PIL import Image
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 
 
-def image_compliance_operator(
-    item
-    ) -> bool:
+def image_compliance_operator(item) -> bool:
     """
-    验证数据集项中的图片是否可加载。
+    Validate whether the image in the dataset item can be loaded successfully.
     
-    参数:
-        item (dict): 包含 'image' 键的数据集项。
+    Args:
+        item (dict): A dataset item containing the 'image' key.
         
-    返回:
-        bool: 如果图片有效，则返回 True， 否则返回 False。
+    Returns:
+        bool: Returns True if the image is valid, otherwise False.
     """
     image_path = item['image']
     try:
         with Image.open(image_path) as img:
-            img.load()  # 强制加载图片数据
+            img.load()  # Force image data to load
         return True
     except Exception as e:
-        print(f"无效图片: {image_path}, 错误: {e}")
+        print(f"Invalid image: {image_path}, Error: {e}")
         return False
 
 
-
-def conversation_compliance_operator(
-    item
-    ) -> bool:
+def conversation_compliance_operator(item) -> bool:
     """
-    验证数据集项中的 'conversations' 是否合规，
-    如果包含 'USER' 或 'ASSISTANT'，则直接返回 False，并打印错误信息。
+    Validate whether the 'conversations' in the dataset item are compliant.
+    If they contain 'USER' or 'ASSISTANT', return False and print an error message.
 
-    参数:
-        item (dict): 包含 'conversations' 键的数据集项。
+    Args:
+        item (dict): A dataset item containing the 'conversations' key.
 
-    返回:
-        bool: 如果对话有效，则返回 True，否则返回 False。
+    Returns:
+        bool: Returns True if conversations are valid, otherwise False.
     """
     if 'conversations' not in item or not isinstance(item['conversations'], list):
-        print(f"数据项中的对话格式无效: {item}")
+        print(f"Invalid conversation format in dataset item: {item}")
         return False
 
     conversations = item['conversations']
 
     for conv in conversations:
-        # 检查是否包含 'USER' 或 'ASSISTANT'
+        # Check if 'USER' or 'ASSISTANT' are present in any part of the conversation
         if any('USER' in part or 'ASSISTANT' in part for part in conv):
-            print(f"对话中含有 'USER' 或 'ASSISTANT' 的内容: {item}")
+            print(f"Conversation contains 'USER' or 'ASSISTANT': {item}")
             return False
         
-        # 每对对话必须是包含两个元素的列表或元组
+        # Each conversation pair must be a list or tuple with exactly two elements
         if not isinstance(conv, (list, tuple)) or len(conv) != 2:
-            print(f"数据项中的对话对结构无效: {item}")
+            print(f"Invalid conversation pair structure in dataset item: {item}")
             return False
         
-        # 对话对的每一部分应为字符串
+        # Each part of the conversation pair must be a string
         if not all(isinstance(part, str) for part in conv):
-            print(f"对话对应包含字符串: {item}")
+            print(f"Conversation pair contains non-string elements: {item}")
             return False
         
-        # 内容不能为空
+        # Content must not be empty
         if not all(part.strip() for part in conv):
-            print(f"数据项中的对话内容为空: {item}")
+            print(f"Conversation contains empty content in dataset item: {item}")
             return False
         
     return True
@@ -70,7 +65,7 @@ def conversation_compliance_operator(
 
 @register()
 def valid_data_filter(dataset: MMDataset) -> MMDataset:
-    # 过滤不可加载图像
+    # Filter out images that cannot be loaded
     print("Filtering invalid images...")
     dataset = dataset.filter(
         func=image_compliance_operator, 
@@ -78,7 +73,7 @@ def valid_data_filter(dataset: MMDataset) -> MMDataset:
         progress=True
     )
 
-    # 过滤无效文本
+    # Filter out invalid conversations
     print("Filtering invalid conversations...")
     dataset = dataset.filter(
         func=conversation_compliance_operator, 
