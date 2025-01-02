@@ -2,28 +2,28 @@ from typing import List, Dict
 from ...core import T, MMDataset, register
 from functools import partial
 
-# 定义转换函数
+# Define the conversion function
 def convert_llava_item(item: Dict, image_path_prefix: str = '') -> Dict:
     """
-    转换每个数据项为目标格式。
+    Convert each data item to the target format.
     
-    参数:
-        item (dict): 原始数据项，包含 'image' 和 'conversations' 键。
-        image_path_prefix (str): 图片路径的前缀，默认为空字符串。如果不传递，将使用默认值 'datasets/llava/valid_images/'。
+    Args:
+        item (dict): Original data item containing 'image' and 'conversations' keys.
+        image_path_prefix (str): Prefix for the image path. Defaults to an empty string. 
+                                 If not provided, the default value 'datasets/llava/valid_images/' will be used.
     
-    返回:
-        dict: 转换后的数据项，包含 'image' 和 'conversations' 键。
+    Returns:
+        dict: Transformed data item containing 'image' and 'conversations' keys.
     """
 
-    
-    # 检查是否存在 'image' 键，如果没有，则设置为空字符串
-    image = item.get('image', '')  # 如果没有 'image' 键，默认为空字符串
+    # Check if the 'image' key exists, if not, set it to an empty string
+    image = item.get('image', '')  # Default to an empty string if 'image' key is missing
 
-    # 如果 'image' 为空字符串，则跳过这个会话
+    # Skip this item if the 'image' field is empty
     if not image:
-        return None  # 如果没有图片，跳过此项，返回 None
+        return None  # Skip this item by returning None if no image exists
     
-    # 拼接图片路径
+    # Concatenate the image path
     image = image_path_prefix + image
     # print(item['conversations'])
     
@@ -33,7 +33,7 @@ def convert_llava_item(item: Dict, image_path_prefix: str = '') -> Dict:
         gpt_message = item['conversations'][i+1]['value'] if i+1 < len(item['conversations']) else ''
         conversations.append([human_message, gpt_message])
 
-    # 构造转换后的数据结构
+    # Construct the transformed data structure
     transformed_item = {
         "image": image,
         "conversations": conversations
@@ -42,20 +42,20 @@ def convert_llava_item(item: Dict, image_path_prefix: str = '') -> Dict:
     return transformed_item
 
 @register()
-def llava_convert(dataset: MMDataset) -> MMDataset:
+def llava_convert(dataset: MMDataset, image_path_prefix='datasets/llava/valid_images/') -> MMDataset:
 
     print('Converting llava dataset...')
-    # 使用 map 算子进行批量转换, 传递 'datasets/llava/valid_images/' 作为默认路径
-    filter_func = partial(convert_llava_item, image_path_prefix='datasets/llava/valid_images/')
+    # Use the map operator for batch transformation, passing 'datasets/llava/valid_images/' as the default path
+    filter_func = partial(convert_llava_item, image_path_prefix=image_path_prefix)
 
-    # 调用 dataset.filter
+    # Apply dataset.map
     dataset = dataset.map(
         func=filter_func, 
         max_workers=8, 
         progress=True
     )
     
-    # 过滤掉 None 的项
-    dataset = dataset.nonempty()  # 通过 nonempty 过滤掉 None
+    # Filter out None items
+    dataset = dataset.nonempty()  # Use nonempty to filter out None values
     
     return dataset
