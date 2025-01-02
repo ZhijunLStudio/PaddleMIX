@@ -1,0 +1,32 @@
+# lora合并
+CUDA_VISIBLE_DEVICES=0 python paddlemix/tools/merge_lora_params.py \
+--model_name_or_path paddlemix/llava/llava-v1.5-7b \
+--lora_path checkpoints/lora_ckpt/llava_sft_ckpts_qwen_1230 \
+--merge_model_path checkpoints/infer_ckpt/llava_generate_1230
+
+
+# 把token相关的复制过来
+cp -r /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/chat_template.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/processor/  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/sentencepiece.bpe.model  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/special_tokens_map.json  /home/lizhijun/.paddlenlp/models/paddlemix/llava/llava-v1.5-7b/tokenizer_config.json checkpoints/infer_ckpt/llava_generate_1230
+
+export PYTHONPATH=$(pwd):$PYTHONPATH
+
+# 推理
+CUDA_VISIBLE_DEVICES=0 python paddlemix/examples/llava/run_predict_eval.py
+
+
+CUDA_VISIBLE_DEVICES=5 python paddlemix/examples/llava/run_predict.py \
+    --model-path /home/lizhijun/llm/PaddleMix/checkpoints/infer_ckpt/test_1212 \
+    --image-file /home/lizhijun/llm/PaddleMix/datasets/mmmu/images/dev_Art_Theory_3_1.png \
+    --fp16
+
+CUDA_VISIBLE_DEVICES=4 python paddlemix/examples/llava/run_predict.py \
+    --model-path checkpoints/llava_origin/llava-v1.5-7b \
+    --image-file datasets/mmmu/images/dev_Art_Theory_3_1.png \
+    --fp16
+
+
+huggingface-cli download --resume-download MMMU/MMMU --local-dir ./checkpoints/MMMU --endpoint https://hf-mirror.com
+
+
+# 训练过程可视化
+visualdl --logdir checkpoints/lora_ckpt/llava_sft_ckpts_qwen_1230/runs/Dec30_21-45-55_G19 --port 8019
