@@ -122,6 +122,7 @@ class KernelInterface:
                     or type(ele) == paddle.base.framework.EagerParamBase
                     or type(ele) == paddle.base.framework.Parameter
                     or type(ele) == paddle.base.framework.Variable
+                    or type(ele) == paddle.base.libpaddle.pir.Value
                 ):
                     dtypes.append(ele.dtype)
                 elif i in self.constexprs:
@@ -179,7 +180,7 @@ class KernelInterface:
                 with open(paddle_custom_op_file_path, "w") as f:
                     f.write(
                         SubstituteTemplate(
-                            paddle_custom_op_head_part + custom_op_template,
+                            custom_op_template,
                             op_dict,
                         )
                     )
@@ -251,6 +252,29 @@ class KernelInterface:
 
 
 def paddle_use_triton(custom_op_template, other_config={}, key=[]):
+
+    index = custom_op_template.find("PD_BUILD_OP")
+
+    body = custom_op_template[:index]
+
+    if body.find("${op_name}_InferShape") == -1:
+        body += "std::vector<std::vector<int64_t>> ${op_name}_InferShape(const std::vector<int64_t>& A_shape) {return {A_shape};}"
+
+    if body.find("${op_name}_InferDtype") == -1:
+        body += (
+            "std::vector<paddle::DataType> ${op_name}_InferDtype(const paddle::DataType& A_dtype) {return {A_dtype};}"
+        )
+
+    tail = custom_op_template[index:]
+
+    tail += """
+    .SetKernelFn(PD_KERNEL(${op_name}_func))
+    .SetInferDtypeFn(PD_INFER_DTYPE(${op_name}_InferDtype))
+    .SetInferShapeFn(PD_INFER_SHAPE(${op_name}_InferShape));
+    """
+
+    custom_op_template = paddle_custom_op_head_part + body + tail
+
     def decorator(func):
         return KernelInterface(func, custom_op_template, other_config, key)
 
@@ -336,17 +360,10 @@ std::vector<std::vector<int64_t>> ${op_name}_InferShape(const std::vector<int64_
     }
 }
 
-std::vector<paddle::DataType> ${op_name}_InferDtype(const paddle::DataType& A_dtype) {
-    return {A_dtype};
-}
-
 PD_BUILD_OP(${op_name})
     .Inputs({"x", "qweight", "scales", paddle::Optional("bias")})
     .Outputs({"out"})
-    .SetKernelFn(PD_KERNEL(${op_name}_func))
     .Attrs({"bool_trans_w: bool"})
-    .SetInferDtypeFn(PD_INFER_DTYPE(${op_name}_InferDtype))
-    .SetInferShapeFn(PD_INFER_SHAPE(${op_name}_InferShape));
 """
 )
 
@@ -687,10 +704,7 @@ std::vector<paddle::DataType> ${op_name}_InferDtype(const paddle::DataType& A_dt
 PD_BUILD_OP(${op_name})
     .Inputs({"x", "mha_out", "gate_msa", "scale_mlp", "shift_mlp", paddle::Optional("weight"), paddle::Optional("bias")})
     .Outputs({"resi_out", "adaLN_out"})
-    .SetKernelFn(PD_KERNEL(${op_name}_func))
     .Attrs({"epsilon: float"})
-    .SetInferDtypeFn(PD_INFER_DTYPE(${op_name}_InferDtype))
-    .SetInferShapeFn(PD_INFER_SHAPE(${op_name}_InferShape));
 """
 )
 
@@ -954,22 +968,10 @@ std::vector<paddle::Tensor> ${op_name}_func(
   return {y};
 }
 
-std::vector<std::vector<int64_t>> ${op_name}_InferShape(
-        const std::vector<int64_t>& A_shape) {
-  return {A_shape};
-}
-
-std::vector<paddle::DataType> ${op_name}_InferDtype(const paddle::DataType& A_dtype) {
-    return {A_dtype};
-}
-
 PD_BUILD_OP(${op_name})
     .Inputs({"x", "scale", "shift", paddle::Optional("weight"), paddle::Optional("bias")})
     .Outputs({"out"})
-    .SetKernelFn(PD_KERNEL(${op_name}_func))
     .Attrs({"epsilon: float"})
-    .SetInferDtypeFn(PD_INFER_DTYPE(${op_name}_InferDtype))
-    .SetInferShapeFn(PD_INFER_SHAPE(${op_name}_InferShape));
 """
 )
 
@@ -1171,22 +1173,10 @@ std::vector<paddle::Tensor> ${op_name}_func(
     return {y};
 }
 
-std::vector<std::vector<int64_t>> ${op_name}_InferShape(
-        const std::vector<int64_t>& A_shape) {
-  return {A_shape};
-}
-
-std::vector<paddle::DataType> ${op_name}_InferDtype(const paddle::DataType& A_dtype) {
-  return {A_dtype};
-}
-
 PD_BUILD_OP(${op_name})
     .Inputs({"x", paddle::Optional("weight"), paddle::Optional("bias")})
     .Outputs({"out"})
-    .SetKernelFn(PD_KERNEL(${op_name}_func))
     .Attrs({"epsilon: float"})
-    .SetInferDtypeFn(PD_INFER_DTYPE(${op_name}_InferDtype))
-    .SetInferShapeFn(PD_INFER_SHAPE(${op_name}_InferShape));
 """
 )
 
@@ -1389,10 +1379,7 @@ std::vector<paddle::DataType> ${op_name}_InferDtype(const paddle::DataType& A_dt
 PD_BUILD_OP(${op_name})
     .Inputs({"x", "q_norm_weight", "q_norm_bias", "k_norm_weight", "k_norm_bias", "freqs_cis"})
     .Outputs({"q_out", "k_out", "v_out"})
-    .SetKernelFn(PD_KERNEL(${op_name}_func))
     .Attrs({"epsilon: float"})
-    .SetInferDtypeFn(PD_INFER_DTYPE(${op_name}_InferDtype))
-    .SetInferShapeFn(PD_INFER_SHAPE(${op_name}_InferShape));
 """
 )
 
@@ -1595,10 +1582,8 @@ std::vector<paddle::Tensor> ${op_name}_func(
   int seq_eqkv = y.dims()[1];
   int output_hidden = x.dims()[2] / 3;
   
-  
   auto qkv = get_tensor_ptr(x);
   auto eqkv = get_tensor_ptr(y);
-  
   
   auto out0_tensor = paddle::empty({batch, seq_qkv+seq_eqkv, output_hidden}, x.dtype(), x.place());
   auto out1_tensor = paddle::empty({batch, seq_qkv+seq_eqkv, output_hidden}, x.dtype(), x.place());
@@ -1638,9 +1623,6 @@ std::vector<paddle::DataType> ${op_name}_InferDtype(const paddle::DataType& A_dt
 PD_BUILD_OP(${op_name})
     .Inputs({"x", "y"})
     .Outputs({"out0_tensor", "out1_tensor", "out2_tensor"})
-    .SetKernelFn(PD_KERNEL(${op_name}_func))
-    .SetInferDtypeFn(PD_INFER_DTYPE(${op_name}_InferDtype))
-    .SetInferShapeFn(PD_INFER_SHAPE(${op_name}_InferShape));
 """
 )
 
@@ -1696,6 +1678,15 @@ def split_concat(x, y):
     assert x.shape[0] == y.shape[0]
     assert x.shape[2] == y.shape[2]
 
+    # baseline.
+    if os.getenv("INFERENCE_OPTIMIZE_TRITON") is None:
+        q, k, v = paddle.split(x, 3, axis=-1)
+        eq, ek, ev = paddle.split(y, 3, axis=-1)
+        q = paddle.concat([q, eq], axis=1)
+        k = paddle.concat([k, ek], axis=1)
+        v = paddle.concat([v, ev], axis=1)
+        return q, k, v
+
     batch = x.shape[0]
     seq_qkv = x.shape[1]
     hidd_x = x.shape[2]
@@ -1713,16 +1704,7 @@ def split_concat(x, y):
         grid = ("3", "batch", "seq_qkv + seq_eqkv")
         # -1 means this value does not matter for triton compilation
         split_concat_kernel[(op_name, grid)](
-            out0,
-            out1, 
-            out2, 
-            x, 
-            y,
-            -1, # batch,
-            seq_qkv, 
-            seq_eqkv, 
-            ouput_hidden, 
-            BLOCK_SIZE=BLOCK_SIZE
+            out0, out1, out2, x, y, -1, seq_qkv, seq_eqkv, ouput_hidden, BLOCK_SIZE=BLOCK_SIZE  # batch,
         )
 
     if in_dynamic_or_pir_mode():
@@ -1797,10 +1779,7 @@ std::vector<paddle::DataType> ${op_name}_InferDtype(const paddle::DataType& A_dt
 PD_BUILD_OP(${op_name})
     .Inputs({"x"})
     .Outputs({"out0_tensor", "out1_tensor"})
-    .SetKernelFn(PD_KERNEL(${op_name}_func))
     .Attrs({"num_or_sections: std::vector<int64_t>", "axis: int64_t"})
-    .SetInferDtypeFn(PD_INFER_DTYPE(${op_name}_InferDtype))
-    .SetInferShapeFn(PD_INFER_SHAPE(${op_name}_InferShape));
 """
 )
 

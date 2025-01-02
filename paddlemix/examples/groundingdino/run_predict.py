@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 from dataclasses import dataclass, field
 
 import numpy as np

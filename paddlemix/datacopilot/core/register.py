@@ -17,7 +17,6 @@ import functools
 from .dataset import MMDataset
 
 
-
 def register(cls=MMDataset, force=False):
     '''register
     '''

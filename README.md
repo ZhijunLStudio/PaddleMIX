@@ -34,17 +34,31 @@
 
 
 ## 📰新闻
-**🔥2024.10.31日 PaddleMIX 2.1版本发新直播**
+**🔥2024.11.21日 - 2024.12.22日  PaddleMIX开发项目挑战（已结束）**
 
-- 🎉飞桨多模态大模型套件PaddleMIX全新发布2.1版本！百度研发工程师将在 10月31日（周四）20：00，为您详细解读套件更新内容，以及多模态数据能力标签模型 PP-InsCapTagger 的实现细节和案例应用。赶快扫描下方海报二维码预约报名！
-<div align="center">
-<img src="https://github.com/user-attachments/assets/a32745a1-34bb-4096-a367-664ae58e3565" width="500px" align="middle" ></src>
-
-</div>
+- ✨「体验官招募」PaddleMIX开发项目挑战
+点击链接报名🔗：https://aistudio.baidu.com/activitydetail/1503019366
+🏆投稿至飞桨星河社区项目大厅，加精获得PaddleMIX体验官认证证书及京东卡激励
+欢迎大家投稿～
+<details>
+<summary>点击展开活动海报</summary>
+<p align="center">
+<img src='https://github.com/user-attachments/assets/27e0bbe3-0ff8-49ef-bd39-81a31a2b288b'  width="25%">
+</p>
+</details>
 
 ## 📣最新进展
 
 <!-- 📚《飞桨多模态大模型开发套件PaddleMIX 2.1 震撼发布》，图文音视频场景全覆盖，多模态高效助力产业创新。超大规模训练支持，覆盖图文预训练、文生图、跨模态视觉任务，覆盖金融、教育、电商、医疗等产业场景。8月8日（周四）20：00 带你直播了解多模态大模型最新架构，深度解析PaddleMIX高性能模型库，手把手演示LLaVA模型训推全流程。[报名链接](https://www.wjx.top/vm/wKqysjx.aspx?udsid=449688)   -->
+
+
+**🎉 2024.12.17 支持[GOT-OCR2_0](./paddlemix/examples/GOT_OCR_2_0)推理和训练**
+
+**🎉 2024.12.17 支持[InternVL2_5(1B、2B、4B、8B)](./paddlemix/examples/internvl2)推理**
+
+**🎉 2024.11.27 支持[Janus/JanusFlow](./paddlemix/examples/janus)推理**
+
+**🎉 2024.11.21 支持[MiniCPM-V-2_6](./paddlemix/examples/minicpm-v-2_6)推理**
 
 **🎉 2024.11.8 支持[DenseConnector](./paddlemix/examples/llava_denseconnector)和[Aquila-VL-2B-llava-qwen](./paddlemix/examples/llava_onevision/)推理**
 
@@ -55,6 +69,9 @@
 * 🌟 自9月6日发起大模型套件精品项目征集活动以来,我们收到了30个优质开发者项目,其中25个精品项目已通过平台评估并成功加精。
 
 * 🙏 衷心感谢各位开发者基于套件的精彩创作！🚀 诚挚邀请您也来分享您的创意 - 欢迎将教程发布到公开网页或[飞桨AI Studio](https://aistudio.baidu.com/aistudio/community/multimodal?from=singlemessage)社区！
+
+<details>
+<summary>点击展开更多</summary>
 
 **🔥2024.10.11 发布PaddleMIX v2.1**
 * 支持[PaddleNLP 3.0 beta](https://github.com/PaddlePaddle/PaddleNLP/releases/tag/v3.0.0-beta0)版本，抢先体验其最新功能。
@@ -74,6 +91,7 @@
 * 新增跨模态应用流水线[AppFlow](./applications/README.md)，一键支持自动标注，图像编辑，音生图等11种跨模态应用
 * [PPDiffusers](./ppdiffusers/README.md)发布 0.19.3 版本，新增SDXL及相关任务
 
+</details>
 
 ---
 
@@ -154,7 +172,7 @@ cd PaddleMIX
 conda create -n paddlemix python=3.10 -y
 conda activate paddlemix
 ```
-### 3. 安装PaddlePaddle
+### 3. ‼️安装PaddlePaddle
 
 #### 方法 1: 一键安装（GPU/CPU推荐）
 
@@ -167,32 +185,7 @@ sh build_paddle_env.sh
 #### 方法 2: 手动安装
 关于PaddlePaddle安装的详细教程请查看[Installation](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/linux-pip.html)。
 
-### 4. 昇腾环境安装（可选）
-
-当前 PaddleMIX 支持昇腾 910B 芯片（更多型号还在支持中，如果您有其他型号的相关需求，请提交issue告知我们），昇腾驱动版本为 23.0.3。考虑到环境差异性，我们推荐使用飞桨官方提供的标准镜像完成环境准备。
-
-* 参考如下命令启动容器，ASCEND_RT_VISIBLE_DEVICES 指定可见的 NPU 卡号
-
-```shell
-docker run -it --name paddle-npu-dev -v $(pwd):/work \
-    --privileged --network=host --shm-size=128G -w=/work \
-    -v /usr/local/Ascend/driver:/usr/local/Ascend/driver \
-    -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
-    -v /usr/local/dcmi:/usr/local/dcmi \
-    -e ASCEND_RT_VISIBLE_DEVICES="0,1,2,3,4,5,6,7" \
-    registry.baidubce.com/device/paddle-npu:cann80T13-ubuntu20-$(uname -m)-gcc84-py39 /bin/bash
-```
-
-* 在容器内安装飞桨
-
-```shell
-# 注意需要先安装飞桨 cpu 版本，目前仅支持python3.9版本
-python -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/
-python -m pip install --pre paddle-custom-npu -i https://www.paddlepaddle.org.cn/packages/nightly/npu/
-```
-
-
-### 5. 安装依赖
+### 4. ‼️安装依赖
 
 #### 方法 1: 一键安装（推荐）
 
@@ -201,15 +194,40 @@ python -m pip install --pre paddle-custom-npu -i https://www.paddlepaddle.org.cn
 sh build_env.sh
 ```
 
-#### 方法 2: 手动安装（请参考 build_env.sh）
+#### 方法 2: 手动安装
+```bash
+# 安装 PaddleMIX
+pip install -e .
+# 安装 ppdiffusers
+cd ppdiffusers
+pip install -e .
+cd ..
+```
+### 5. ‼️验证安装
+```bash
+sh check_env.sh
 
+环境和依赖推荐版本:
+- paddlepaddle: 3.0.0b2或develop版本
+- paddlenlp: 3.0.0b2
+- ppdiffusers: 0.29.0
+- huggingface_hub: 0.23.0
+```
+
+### 6. 安装自定义算子（可选）
+* 部分模型需要安装自定义算子（FastLayerNorm、FusedLayerNorm），例如EVA-CLIP、DIT_LLAMA等。
+* 非CUDA环境（例如昇腾环境）则跳过
+```bash
+cd paddlemix/external_ops
+python setup.py install
+```
 
 ## 🔥教程
 
 **快速开始**
-- [多模态理解：新手入门体验](paddlemix/examples/internvl2/README.md)
-- [多模态生成：零基础上手指南](ppdiffusers/examples/inference/README.md)
-- [跨模态任务流水线：端到端流程演示](applications/README.md/#快速开始)
+- [多模态理解：新手入门体验 [示例：InternVL2模型]](paddlemix/examples/internvl2/README.md)
+- [多模态生成：零基础上手指南 [示例：Stable Diffusion模型]](ppdiffusers/examples/stable_diffusion/README.md)
+- [跨模态任务流水线：快速开始](applications/README.md/#快速开始)
 
 **实操演练&范例**
 - [LLaVA模型：从训练到推理的全流程实践](https://aistudio.baidu.com/projectdetail/7917712)
@@ -237,6 +255,9 @@ sh build_env.sh
       <td>
         <b>多模态生成</b>
       </td>
+      <td>
+        <b>多模态大一统</b>
+      </td>
     </tr>
     <tr valign="top">
       <td>
@@ -246,10 +267,13 @@ sh build_env.sh
         <ul>
             <li><a href="paddlemix/examples/clip">CLIP</a></li>
             <li><a href="paddlemix/examples/evaclip">EVA-CLIP</a></li>
-            <li><a href="paddlemix/examples/llava">LLaVA</a></li>
             <li><a href="paddlemix/examples/llava">LLaVA-1.5</a></li>
             <li><a href="paddlemix/examples/llava">LLaVA-1.6</a></li>
             <li><a href="paddlemix/examples/llava">LLaVA-NeXT</a></li>
+            <li><a href="paddlemix/examples/llava_onevision">LLaVA-onevision</a></li>
+            <li><a href="paddlemix/examples/llava_onevision">Aquila-VL-2B-llava-qwen</a></li>
+            <li><a href="paddlemix/examples/llava_critic">LLaVA-Critic</a></li>
+            <li><a href="paddlemix/examples/llava_denseconnector">LLaVA-DenseConnector</a></li>
             <li><a href="paddlemix/examples/qwen_vl">Qwen-VL</a></li>
             <li><a href="paddlemix/examples/qwen2_vl">Qwen2-VL</a></li>
             <li><a href="paddlemix/examples/internvl2">InternVL2</a></li>
@@ -266,6 +290,7 @@ sh build_env.sh
         <ul>
             <li><a href="paddlemix/examples/groundingdino">Grounding DINO</a></li>
             <li><a href="paddlemix/examples/sam">SAM</a></li>
+            <li><a href="paddlemix/examples/sam2">SAM2</a></li>
             <li><a href="paddlemix/examples/YOLO-World">YOLO-World</a></li>
       </ul>
       </ul>
@@ -285,10 +310,18 @@ sh build_env.sh
           <li><b>文生图</b></li>
         <ul>
            <li><a href="ppdiffusers/examples/stable_diffusion">Stable Diffusion</a></li>
+           <li><a href="ppdiffusers/ppdiffusers/pipelines/stable_diffusion_xl">SDXL</a></li>
            <li><a href="ppdiffusers/examples/dreambooth/README_sd3.md">Stable Diffusion 3 (SD3)</a></li>
             <li><a href="ppdiffusers/examples/controlnet">ControlNet</a></li>
             <li><a href="ppdiffusers/examples/t2i-adapter">T2I-Adapter</a></li>
             <li><a href="ppdiffusers/examples/text_to_image_laion400m">LDM</a></li>
+            <li><a href="ppdiffusers/ppdiffusers/pipelines/consistency_models">Consistency Models</a></li>
+            <li><a href="ppdiffusers/ppdiffusers/pipelines/deepfloyd_if">DeepFloyd IF</a></li>
+            <li><a href="ppdiffusers/ppdiffusers/pipelines/shap_e">Shap-E</a></li>
+            <li><a href="ppdiffusers/examples/kandinsky2_2">Kandinsky-2</a></li>
+            <li><a href="ppdiffusers/ppdiffusers/pipelines/wuerstchen">Würstchen</a></li>
+            <li><a href="ppdiffusers/ppdiffusers/pipelines/hotshot_xl">Hotshot-XL</a></li>
+            <li><a href="ppdiffusers/ppdiffusers/pipelines/latent_consistency_models">LCMs</a></li>
             <li><a href="ppdiffusers/ppdiffusers/pipelines/unidiffuser">Unidiffuser</a></li>
             <li><a href="ppdiffusers/examples/class_conditional_image_generation/DiT">DiT</a></li>
             <li><a href="ppdiffusers/examples/HunyuanDiT">HunyuanDiT</a></li>
@@ -296,10 +329,13 @@ sh build_env.sh
         </ul>
           <li><b>文生视频</b></li>
         <ul>
-           <li><a href="ppdiffusers/examples/lvdm">LVDM</a></li>
+           <li><a href="ppdiffusers/examples/text_to_video_lvdm">LVDM</a></li>
            <li><a href="ppdiffusers/examples/stable_video_diffusion">SVD</a></li>
            <li><a href="ppdiffusers/examples/AnimateAnyone">AnimateAnyone</a></li>
            <li><a href="ppdiffusers/examples/Open-Sora">OpenSora</a></li>
+           <li><a href="ppdiffusers/ppdiffusers/pipelines/animatediff">AnimateDiff</a></li>
+           <li><a href="ppdiffusers/ppdiffusers/pipelines/text_to_video_synthesis">zeroscope_v2_XL</a></li>
+           <li><a href="ppdiffusers/examples/cogvideo">CogVideoX</a></li>
         </ul>
         </ul>
           <li><b>音频生成</b></li>
@@ -308,11 +344,66 @@ sh build_env.sh
            <li><a href="ppdiffusers/ppdiffusers/pipelines/audioldm2">AudioLDM2</a></li>
         </ul>
       </td>
+      <td>
+        <ul>
+        </ul>
+          <li><b>统一多模态模型</b></li>
+        <ul>
+          <li><a href="paddlemix/examples/janus">Janus</a></li>
+        </ul>
+      </td>
     </tr>
   </tbody>
 </table>
 
 更多模型能力，可参考[模型能力矩阵](./paddlemix/examples/README.md)
+
+
+
+## 📊多模数据处理工具箱DataCopilot
+<table align="center">
+  <tbody>
+    <tr align="center" valign="center">
+      <td>
+        <b>基础能力</b>
+      </td>
+      <td>
+        <b>数据分析</b>
+      </td>
+      <td>
+        <b>数据生成</b>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td>
+        <ul>
+        </ul>
+          <li><b>使用文档</b></li>
+        <ul>
+            <li><a href="paddlemix/datacopilot">DataCopilot</a></li>
+      </ul>
+      </td>
+      <td>
+        <ul>
+        </ul>
+          <li><b>能力标签模型</b></li>
+        <ul>
+           <li><a href="paddlemix/datacopilot/example">PP-InsCapTagger</a></li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+        </ul>
+          <li><b>文档类数据生成方案</b></li>
+        <ul>
+          <li><a href="paddlemix/datacopilot/example">PP-InfinityDocData</a></li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+更多数据相关功能，可参考[DataCopilot](./paddlemix/datacopilot)主页
 
 
 ## 🏆特色模型|工具

@@ -13,13 +13,10 @@
 # limitations under the License.
 import argparse
 
-
 import paddle
 from paddlenlp.peft import LoRAConfig, LoRAModel
 
 from paddlemix.auto import AutoConfigMIX, AutoModelMIX
-
-
 
 
 def parse_arguments():

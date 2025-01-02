@@ -101,7 +101,6 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
             self.visual_encoder.eval()
             logger.info("freeze vision encoder")
         if config.get("train_mode", None) == "stage1":
-            print("进stage1啦")
             self.train_stage1 = True
             tokenizer_name = config.qformer_config.tokenizer_name or "bert-base-uncased"
             self.tokenizer = self.init_tokenizer(tokenizer_name)
@@ -122,9 +121,7 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
                 shape=(1,), default_initializer=paddle.nn.initializer.Constant(value=0.07)
             )
             self.max_txt_len = config.get("max_txt_len")
-
         else:
-            print("进stage2啦")
             if config.use_decoder_only_language_model:
                 name_or_path = (
                     config.text_config["_name_or_path"] if isinstance(config.text_config, dict) else config.text_config
@@ -214,7 +211,6 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
                 param.stop_gradient = True
             self.pad_token_id = self.language_model.pad_token_id
 
-
             self.Qformer = BertLMHeadModel(
                 config=config.qformer_config,
                 encoder_width=self.visual_encoder.num_features,
@@ -222,8 +218,6 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
                 text_hidden_size=self.language_model.hidden_size,
                 model_config=config,  # in order to pass some parameters that are not available in config.qformer_config
             )
-
-
             self.Qformer.cls = None
             self.Qformer.bert.embeddings.word_embeddings = None
             self.Qformer.bert.embeddings.position_embeddings = None
@@ -465,57 +459,6 @@ class Blip2ForConditionalGeneration(Blip2PretrainedModel):
         return Blip2ForStage1ModelOutput(
             loss=loss_itc + loss_itm + loss_lm, loss_itc=loss_itc, loss_itm=loss_itm, loss_lm=loss_lm
         )
-
-
-    @paddle.no_grad()
-    def inference_stage1(self, pixel_values, text_input):
-        """
-        推理专用的stage1方法
-        """
-        text = text_input
-        image = pixel_values
-
-        # 获取 image embeds
-        image_embeds = self.Qformer.ln_vision(self.visual_encoder(image))
-        image_atts = paddle.ones(image_embeds.shape[:-1], dtype="int64")
-        query_tokens = self.Qformer.query_tokens.expand(shape=[image_embeds.shape[0], -1, -1])
-        
-        # 获取 text embeds
-        text_tokens = self.tokenizer(
-            text,
-            padding="max_length",
-            truncation=True,
-            max_length=self.max_txt_len,
-            return_attention_mask=True,
-            return_tensors="pd",
-        )
-        # 生成ITM的logits
-        query_tokens_itm = self.Qformer.query_tokens.expand(shape=[text_tokens.input_ids.shape[0], -1, -1])
-        query_atts_itm = paddle.ones(shape=query_tokens_itm.shape[:-1], dtype="int64")
-        attention_mask_all = paddle.concat(x=[query_atts_itm, text_tokens.attention_mask], axis=1)
-        image_atts = paddle.ones(shape=image_embeds.shape[:-1], dtype="int64")
-        
-        output_itm = self.Qformer.bert(
-            text_tokens.input_ids,
-            query_embeds=query_tokens_itm,
-            attention_mask=attention_mask_all,
-            encoder_hidden_states=image_embeds,
-            encoder_attention_mask=image_atts,
-            return_dict=True,
-        )
-        vl_embeddings = output_itm.last_hidden_state[:, : query_tokens_itm.shape[1], :]
-        vl_output = self.Qformer.itm_head(vl_embeddings)
-        logits = vl_output.mean(axis=1)
-
-        print("logits:", logits)
-        # 计算Softmax，将logits转化为概率
-        probabilities = paddle.nn.functional.softmax(logits, axis=-1)
-
-        # 匹配的概率
-        matching_probability = probabilities[0, 1].numpy()
-
-        print("图文匹配概率:", matching_probability)
-        return matching_probability
 
     @paddle.no_grad()
     def generate_stage1(

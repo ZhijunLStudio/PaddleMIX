@@ -110,8 +110,11 @@ else:
         [
             "AsymmetricAutoencoderKL",
             "AutoencoderKL",
+            "AutoencoderKLCogVideoX",
             "AutoencoderKLTemporalDecoder",
             "AutoencoderTiny",
+            "CogVideoXTransformer3DModel",
+            "CogVideoXTransformer3DVCtrlModel",
             "ConsistencyDecoderVAE",
             "ControlNetModel",
             "Kandinsky3UNet",
@@ -143,6 +146,11 @@ else:
             "GaussianDiffusion_SDEdit",
             "STUNetModel",
             "Vid2VidSTUNet",
+            # new add
+            "SD3ControlNetModel",
+            "SD3MultiControlNetModel",
+            # new add
+            "VCtrlModel",
         ]
     )
 
@@ -162,6 +170,8 @@ else:
             "AutoPipelineForInpainting",
             "AutoPipelineForText2Image",
             "ConsistencyModelPipeline",
+            "CogVideoXVCtrlPipeline",
+            "CogVideoXVCtrlImageToVideoPipeline",
             "DanceDiffusionPipeline",
             "DDIMPipeline",
             "DDPMPipeline",
@@ -179,6 +189,8 @@ else:
     _import_structure["schedulers"].extend(
         [
             "CMStochasticIterativeScheduler",
+            "CogVideoXDDIMScheduler",
+            "CogVideoXDPMScheduler",
             "DDIMInverseScheduler",
             "DDIMParallelScheduler",
             "DDIMScheduler",
@@ -263,6 +275,7 @@ else:
             "BlipDiffusionControlNetPipeline",
             "BlipDiffusionPipeline",
             "CLIPImageProjection",
+            "CogVideoXPipeline",
             "CycleDiffusionPipeline",
             "IFImg2ImgPipeline",
             "IFImg2ImgSuperResolutionPipeline",
@@ -301,6 +314,8 @@ else:
             "SemanticStableDiffusionPipeline",
             "ShapEImg2ImgPipeline",
             "ShapEPipeline",
+            "StableDiffusion3ControlNetInpaintingPipeline",
+            "StableDiffusion3ControlNetPipeline",
             "StableDiffusion3Img2ImgPipeline",
             "StableDiffusion3Pipeline",
             "StableDiffusionAdapterPipeline",
@@ -482,8 +497,11 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             AsymmetricAutoencoderKL,
             AutoencoderKL,
             AutoencoderKL_imgtovideo,
+            AutoencoderKLCogVideoX,
             AutoencoderKLTemporalDecoder,
             AutoencoderTiny,
+            CogVideoXTransformer3DModel,
+            CogVideoXTransformer3DVCtrlModel,
             ConsistencyDecoderVAE,
             ControlNetModel,
             DiTLLaMA2DModel,
@@ -498,6 +516,8 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             MultiAdapter,
             PaddleInferRuntimeModel,
             PriorTransformer,
+            SD3ControlNetModel,
+            SD3MultiControlNetModel,
             SD3Transformer2DModel,
             STUNetModel,
             T2IAdapter,
@@ -510,6 +530,7 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             UNetMotionModel,
             UNetSpatioTemporalConditionModel,
             UViTT2IModel,
+            VCtrlModel,
             Vid2VidSTUNet,
             VQModel,
         )
@@ -529,6 +550,8 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             AutoPipelineForText2Image,
             BlipDiffusionControlNetPipeline,
             BlipDiffusionPipeline,
+            CogVideoXVCtrlImageToVideoPipeline,
+            CogVideoXVCtrlPipeline,
             ConsistencyModelPipeline,
             DanceDiffusionPipeline,
             DDIMPipeline,
@@ -547,6 +570,8 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
         )
         from .schedulers import (
             CMStochasticIterativeScheduler,
+            CogVideoXDDIMScheduler,
+            CogVideoXDPMScheduler,
             DDIMInverseScheduler,
             DDIMParallelScheduler,
             DDIMScheduler,
@@ -612,6 +637,7 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             AudioLDM2UNet2DConditionModel,
             AudioLDMPipeline,
             CLIPImageProjection,
+            CogVideoXPipeline,
             CycleDiffusionPipeline,
             IFImg2ImgPipeline,
             IFImg2ImgSuperResolutionPipeline,
@@ -665,6 +691,7 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             SemanticStableDiffusionPipeline,
             ShapEImg2ImgPipeline,
             ShapEPipeline,
+            StableDiffusion3ControlNetPipeline,
             StableDiffusion3Img2ImgPipeline,
             StableDiffusion3Pipeline,
             StableDiffusionAdapterPipeline,

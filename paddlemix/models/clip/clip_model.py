@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import paddle
-import paddle.nn.functional as F
 
 """ CLIP Model
 
@@ -289,23 +288,3 @@ class CLIP(CLIPPretrainedModel):
             (image_features, text_features, self.logit_scale.exp())
         )
         return loss_itc, image_features, text_features, self.logit_scale.exp()
-
-
-    def clip_score(self, image, input_ids=None, text_emb=None, **kwargs):
-        self.clip_scale()
-        # 1. 获取图像特征
-        image_features = self.encode_image(image, normalize=True)
-        text = input_ids
-
-        # 2. 获取文本特征
-        if text is not None or text_emb is not None:
-            text_features = self.encode_text(text, text_features=text_emb, normalize=True)
-        else:
-            print("文本输入或嵌入为空，返回0分")
-            return 0.0
-        
-        # 3. 计算余弦相似度作为CLIP-score
-        clip_score = F.cosine_similarity(image_features, text_features)
-
-        return clip_score.numpy()
-    

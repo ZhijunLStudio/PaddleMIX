@@ -119,14 +119,6 @@ def preprocess_v1(sources, tokenizer: PretrainedTokenizer, has_image: bool = Fal
     pattern_role_gpt = roles["gpt"]
     match_role_gpt = [n.start() for n in re.finditer(pattern_role_gpt, sources)]
 
-    # 如果有问题，打印出来
-    if len(match_role_human) != len(match_role_gpt):
-        print("match_role_human:", match_role_human)
-        print("match_role_gpt:", match_role_gpt)
-        print("sources:", sources)
-
-
-
     assert len(match_role_human) == len(match_role_gpt)
     conv.messages = []
     for i in range(len(match_role_human)):

@@ -34,10 +34,8 @@ from .utils import blip2_load
 
 VISION_WEIGHTS = {"eva_vit_g": "https://bj.bcebos.com/paddlenlp/models/community/paddlemix/blip2-stage2/eva_vit_g"}
 BRIDGE_WEIGHTS = {
-    # "qformer-stage2": "https://bj.bcebos.com/paddlenlp/models/community/paddlemix/blip2-stage2/Qformer",
-    # "qformer-stage1": "https://bj.bcebos.com/paddlenlp/models/community/paddlemix/blip2-stage1/Qformer",
-    "qformer-stage2": "https://paddlenlp.bj.bcebos.com/models/community/paddlemix/blip2-stage2/Qformer",
-    "qformer-stage1": "https://paddlenlp.bj.bcebos.com/models/community/paddlemix/blip2-stage1/Qformer",
+    "qformer-stage2": "https://bj.bcebos.com/paddlenlp/models/community/paddlemix/blip2-stage2/Qformer",
+    "qformer-stage1": "https://bj.bcebos.com/paddlenlp/models/community/paddlemix/blip2-stage1/Qformer",
 }
 from paddlenlp.transformers.utils import resolve_cache_dir
 
@@ -232,7 +230,6 @@ class Blip2PretrainedModel(MixPretrainedModel):
         # 1. get the PretrainedConfig to init model
         if not isinstance(config, PretrainedConfig):
             config_path = config if config is not None else pretrained_model_name_or_path
-            print("config_path:", config_path)
             config, model_kwargs = cls.config_class.from_pretrained(
                 config_path,
                 cache_dir=cache_dir,
@@ -312,8 +309,6 @@ class Blip2PretrainedModel(MixPretrainedModel):
             loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
         else:
             loaded_state_dict_keys = [k for k in state_dict.keys()]
-        print("loaded_state_dict_keys:",loaded_state_dict_keys)
-        print("loaded_state_dict_keys end")
 
         if low_cpu_mem_usage:  # or use_keep_in_fp32_modules:
             state_dict = None
@@ -387,11 +382,6 @@ class Blip2PretrainedModel(MixPretrainedModel):
             else self.config.get("vision_and_bridge_name_or_path", None)
         )
 
-        print("model_name_or_path:", model_name_or_path)
-        print("vision_model_name_or_path:", vision_model_name_or_path)
-        print("qformer_model_name_or_path:", qformer_model_name_or_path)
-
-
         if (not qformer_model_name_or_path and not vision_model_name_or_path) and model_name_or_path is None:
             ValueError(
                 "either vision_and_bridge_name_or_path or (bridge_name_or_path and vision_name_or_path) should be set."
@@ -418,7 +408,6 @@ class Blip2PretrainedModel(MixPretrainedModel):
             if model_name_or_path is not None:
 
                 model_name_or_path = str(model_name_or_path)
-                print("weight_name:", weight_name)
                 if weight_name == "visual_encoder":
                     if model_name_or_path in VISION_WEIGHTS:
                         model_name_or_path = VISION_WEIGHTS[model_name_or_path]

@@ -18,6 +18,15 @@ import os
 
 import yaml
 from paddlenlp.transformers import AutoTokenizer
+#fix paddlenlp 3.0b3 auto
+from paddlemix.models.llava.language_model.tokenizer import LLavaTokenizer
+from paddlemix.models.llava.language_model.llava_llama import LlavaConfig
+try:
+    AutoTokenizer.register(LlavaConfig, LLavaTokenizer)
+    print('LLavaTokenizer register success!!!!')
+except:
+    pass
+
 from paddlenlp.utils.import_utils import import_module
 from paddlenlp.utils.log import logger
 
@@ -44,7 +53,7 @@ class AutoTokenizerMIX(AutoTokenizer):
             cls._name_mapping[key] = value
 
     @classmethod
-    def _get_tokenizer_class_from_config(cls, pretrained_model_name_or_path, config_file_path, use_fast):
+    def _get_tokenizer_class_from_config(cls, pretrained_model_name_or_path, config_file_path, use_fast=None):
         cls._update_name_mapping()
         with io.open(config_file_path, encoding="utf-8") as f:
             init_kwargs = json.load(f)
@@ -59,7 +68,7 @@ class AutoTokenizerMIX(AutoTokenizer):
                 if class_name == "processors":
                     import_class = import_module(f"paddlemix.{class_name}.tokenizer")
                 else:
-                    #import_class = import_module(f"paddlemix.models.{class_name}.tokenizer")
+                    # import_class = import_module(f"paddlemix.models.{class_name}.tokenizer")
                     import_class = import_module(f"paddlemix.models.{class_name}")
 
             tokenizer_class = getattr(import_class, init_class)

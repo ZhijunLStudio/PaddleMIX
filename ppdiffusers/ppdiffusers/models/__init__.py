@@ -22,6 +22,7 @@ if is_paddle_available():
     _import_structure["adapter"] = ["MultiAdapter", "T2IAdapter"]
     _import_structure["autoencoder_asym_kl"] = ["AsymmetricAutoencoderKL"]
     _import_structure["autoencoder_kl"] = ["AutoencoderKL"]
+    _import_structure["autoencoder_kl_cogvideox"] = ["AutoencoderKLCogVideoX"]
     _import_structure["autoencoder_kl_temporal_decoder"] = ["AutoencoderKLTemporalDecoder"]
     _import_structure["autoencoder_tiny"] = ["AutoencoderTiny"]
     _import_structure["consistency_decoder_vae"] = ["ConsistencyDecoderVAE"]
@@ -32,6 +33,7 @@ if is_paddle_available():
     _import_structure["t5_film_transformer"] = ["T5FilmDecoder"]
     _import_structure["transformer_2d"] = ["Transformer2DModel"]
     _import_structure["transformer_sd3"] = ["SD3Transformer2DModel"]
+    _import_structure["cogvideox_transformer_3d"] = ["CogVideoXTransformer3DModel"]
     _import_structure["transformer_temporal"] = ["TransformerTemporalModel"]
     _import_structure["unet_1d"] = ["UNet1DModel"]
     _import_structure["unet_2d"] = ["UNet2DModel"]
@@ -55,6 +57,11 @@ if is_paddle_available():
     _import_structure["modelscope_gaussion_sdedit"] = ["GaussianDiffusion_SDEdit"]
     _import_structure["modelscope_st_unet"] = ["STUNetModel"]
     _import_structure["modelscope_st_unet_video2video"] = ["Vid2VidSTUNet"]
+    # NOTE, new add
+    _import_structure["controlnet_sd3"] = ["SD3ControlNetModel", "SD3MultiControlNetModel"]
+    # NOTE, new add
+    _import_structure["vctrl"] = ["VCtrlModel"]
+    _import_structure["cogvideox_transformer_3d_vctrl"] = ["CogVideoXTransformer3DVCtrlModel"]
 
 
 if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
@@ -62,10 +69,14 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
         from .adapter import MultiAdapter, T2IAdapter
         from .autoencoder_asym_kl import AsymmetricAutoencoderKL
         from .autoencoder_kl import AutoencoderKL
+        from .autoencoder_kl_cogvideox import AutoencoderKLCogVideoX
         from .autoencoder_kl_temporal_decoder import AutoencoderKLTemporalDecoder
         from .autoencoder_tiny import AutoencoderTiny
+        from .cogvideox_transformer_3d import CogVideoXTransformer3DModel
+        from .cogvideox_transformer_3d_vctrl import CogVideoXTransformer3DVCtrlModel
         from .consistency_decoder_vae import ConsistencyDecoderVAE
         from .controlnet import ControlNetModel
+        from .controlnet_sd3 import SD3ControlNetModel, SD3MultiControlNetModel
         from .dit_llama import DiTLLaMA2DModel
         from .dit_llama_t2i import DiTLLaMAT2IModel
         from .dual_transformer_2d import DualTransformer2DModel
@@ -94,6 +105,7 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
         from .unet_motion_model import MotionAdapter, UNetMotionModel
         from .unet_spatio_temporal_condition import UNetSpatioTemporalConditionModel
         from .uvit_t2i import UViTT2IModel
+        from .vctrl import VCtrlModel
         from .vq_model import VQModel
 else:
     import sys

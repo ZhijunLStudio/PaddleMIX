@@ -220,9 +220,9 @@ python -m paddle.distributed.launch --nproc_per_node 8 run_pretrain_dist.py \
 MODEL_NAME="paddlemix/CLIP/CLIP-ViT-L-14-laion2B-s32B-b82K"
 TEXT_MODEL_NAME="CLIP-ViT-L-14-laion2B-s32B-b82K"
 
-IN_1K_DIR=imagenet-val
+IN_1K_DIR=[YOUR ImageNet1K val data path]
 
-CUDA_VISIBLE_DEVICES=2 python paddlemix/examples/clip/run_zero_shot_eval.py \
+python paddlemix/examples/clip/run_zero_shot_eval.py \
     --per_device_eval_batch_size 32 \
     --dataloader_num_workers=2 \
     --model ${MODEL_NAME}  \
@@ -230,7 +230,7 @@ CUDA_VISIBLE_DEVICES=2 python paddlemix/examples/clip/run_zero_shot_eval.py \
     --pretrained_text_model ${TEXT_MODEL_NAME} \
     --classification_eval ${IN_1K_DIR} \
     --output_dir "output" \
-    --disable_tqdm False 
+    --disable_tqdm False \
 ```
 
 ```

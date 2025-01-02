@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 import random
 import sys
 
@@ -35,7 +34,6 @@ from paddlemix.processors.blip_processing import (
     BlipImageProcessor,
     BlipTextProcessor,
 )
-from paddlemix.models.blip2.configuration import Blip2Config
 from paddlemix.utils.log import logger
 
 
@@ -49,10 +47,10 @@ class DataArguments:
     """
 
     input_image: str = field(
-        default="/home/lizhijun/PaddleMIX-develop/paddlemix/demo_images/examples_image1.jpg", metadata={"help": "The name of input image."}
+        default="http://images.cocodataset.org/val2017/000000039769.jpg", metadata={"help": "The name of input image."}
     )  # "http://images.cocodataset.org/val2017/000000039769.jpg"
     prompt: str = field(
-        default="Red panda in the woods", metadata={"help": "The prompt of the image to be generated."}
+        default="describe the image", metadata={"help": "The prompt of the image to be generated."}
     )  # "Question: how many cats are there? Answer:"
 
 
@@ -62,39 +60,16 @@ class ModelArguments:
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
     """
 
-    # model_name_or_path: str = field(
-    #     default="paddlemix/blip2-stage1",
-    #     metadata={"help": "Path to pretrained model or model identifier"},
-    # )
     model_name_or_path: str = field(
         default="paddlemix/blip2-caption-opt2.7b",
         metadata={"help": "Path to pretrained model or model identifier"},
     )
-
-
-    # model_name_or_path: str = field(
-    #     default="paddlemix/qformer-stage1",
-    #     metadata={"help": "Path to pretrained model or model identifier"},
-    # )
-
-    # model_name_or_path: str = field(
-    #     default="paddlemix/blip2-stage1",
-    #     metadata={"help": "Path to pretrained model or model identifier"},
-    # )
 
     text_model_name_or_path: str = field(
         default="facebook/opt-2.7b",
         metadata={"help": "The type of text model to use (OPT, T5)."},
     )
     image_size: int = field(default=224, metadata={"help": " Image size for training. (default:224)"})
-    train_mode = "stage1"
-    qformer_tokenizer_name: str = field(default=None, metadata={"help": "qformer tokenizer name"})
-    vision_name_or_path: str = field(
-        default="",
-        metadata={"help": "The type of text model to use (OPT, T5)."},
-    )
-
-
 
 
 @dataclass
@@ -140,28 +115,16 @@ class PreTrainingArguments(TrainingArguments):
     )
 
 
-    
-
-
-def create_model(model_args, training_args=None):
-    # If model_args has train_mode attribute, it will be passed to config
-    config_kwargs = {}
-    if hasattr(model_args, 'train_mode'):
-        config_kwargs['train_mode'] = model_args.train_mode
-
-    blip2_config = Blip2Config.from_pretrained(model_args.model_name_or_path)
-    model = Blip2ForConditionalGeneration(blip2_config)
+def create_model(config, training_args=None):
+    model = Blip2ForConditionalGeneration.from_pretrained(config.model_name_or_path)
     return model
-
-
 
 
 def main():
     parser = PdArgumentParser((ModelArguments, DataArguments, PreTrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     url = data_args.input_image  # "http://images.cocodataset.org/val2017/000000039769.jpg"
-    # image = Image.open(requests.get(url, stream=True).raw)
-    image = Image.open("/home/lizhijun/PaddleMIX-develop/paddlemix/demo_images/examples_image1.jpg")
+    image = Image.open(requests.get(url, stream=True).raw)
     training_args.print_config(model_args, "Model")
     training_args.print_config(data_args, "Data")
     training_args.prompt = data_args.prompt
@@ -170,8 +133,6 @@ def main():
     model_args.data_world_rank = training_args.data_world_rank
     model_args.data_world_size = training_args.data_world_size
     paddle.set_device(training_args.device)
-
-    # 加载处理器
     prompt = data_args.prompt
     tokenizer_class = create_tokenizer(model_args.text_model_name_or_path)
     image_processor = BlipImageProcessor.from_pretrained(
@@ -182,33 +143,25 @@ def main():
     )
     text_processor_class.prompt = ""
     processor = Blip2Processor(image_processor, text_processor_class, tokenizer_class)
-
-    # 处理输入
     inputs = processor(
         images=image,
         text=prompt,
         return_tensors="pd",
-        return_attention_mask=False,
-        mode="eval",
+        return_attention_mask=True,
+        mode="test",
     )
     model_args.mp_degree = training_args.tensor_parallel_degree
     model_args.gradient_checkpointing = training_args.gradient_checkpointing
-    
-
-    # 加载模型
-    model = create_model(model_args, training_args)
+    model = create_model(model_args)
+    decorated = paddle.amp.decorate(models=[model.visual_encoder, model.language_model], optimizers=None, level="O2")
+    model.visual_encoder, model.language_model = decorated
     model.eval()
-    
-    # 获取 ITM 阶段 logits
-    with paddle.no_grad():
-        pixel_values = inputs["pixel_values"]
-        text_input_stage1 = prompt  # 文本输入直接传递到 ITM 阶段
-        print("text_input_stage1:", text_input_stage1)
-
-        # 调用 Stage1 模型，直接获取匹配概率
-        matching_probability = model.inference_stage1(pixel_values=pixel_values, text_input=text_input_stage1)
-
-
+    if training_args.load_model_path is not None:
+        load_model(training_args, model, ckpt_dir=os.path.join(training_args.load_model_path, "model_state.pdparams"))
+    generated_ids, scores = model.generate(**inputs)
+    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+    logger.info("Generate text: {}".format(generated_text))
+    return model
 
 
 def setdistenv(args):
