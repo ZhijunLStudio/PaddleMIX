@@ -1,38 +1,37 @@
 from typing import Optional
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 from functools import partial
 
 
 def is_special_char_ratio_valid(item, min_ratio: float = 0.0, max_ratio: float = 0.25) -> bool:
     """
-    检查样本中特殊字符比例是否在指定范围内。
+    Checks whether the ratio of special characters in the sample is within the specified range.
 
     Args:
-        item (dict): 包含文本信息的字典。
-        min_ratio (float): 最小特殊字符比例，默认值为 0.0。
-        max_ratio (float): 最大特殊字符比例，默认值为 0.25。
+        item (dict): A dictionary containing text information.
+        min_ratio (float): Minimum special character ratio. Default is 0.0.
+        max_ratio (float): Maximum special character ratio. Default is 0.25.
 
     Returns:
-        bool: 如果特殊字符比例在 [min_ratio, max_ratio] 范围内，返回 True；否则返回 False。
+        bool: True if the special character ratio is within [min_ratio, max_ratio], False otherwise.
     """
-    # 拼接会话内容
+    # Concatenate conversation content
     user_conv = '\n\n'.join(
         ''.join(conversation) for conversation in item['conversations']
     ).replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
 
-    # 计算特殊字符的数量
+    # Count the number of special characters
     special_characters = [
         '|', ':', ';', '@', '(', ')', '[', ']', '{', '}', '^', '\'', '\"', '’',
         '`', '?', '$', '%', '#', '!', '&', '*', '+', ',', '.'
     ]
     special_char_count = sum(1 for char in user_conv if char in special_characters)
 
-    # 计算特殊字符比例
+    # Calculate the ratio of special characters
     total_chars = len(user_conv)
     special_char_ratio = special_char_count / total_chars if total_chars > 0 else 0.0
 
-
-    # 判断是否在指定范围内
+    # Check if the ratio is within the specified range
     return min_ratio <= special_char_ratio <= max_ratio
 
 
@@ -43,21 +42,21 @@ def special_characters_filter(
     max_ratio: Optional[float] = 0.25
 ) -> MMDataset:
     """
-    根据样本的特殊字符比例过滤数据集。
+    Filters the dataset based on the ratio of special characters in the samples.
 
     Args:
-        dataset (MMDataset): 待过滤的数据集。
-        min_ratio (float): 最小特殊字符比例，默认值为 0.0。
-        max_ratio (float): 最大特殊字符比例，默认值为 0.25。
+        dataset (MMDataset): The dataset to be filtered.
+        min_ratio (float): Minimum special character ratio. Default is 0.0.
+        max_ratio (float): Maximum special character ratio. Default is 0.25.
 
     Returns:
-        MMDataset: 过滤后的数据集。
+        MMDataset: The filtered dataset.
     """
-    print("正在过滤特殊字符比例不符合要求的样本...")
-    # 创建过滤函数
+    print("Filtering samples with invalid special character ratios...")
+    # Create the filter function
     filter_func = partial(is_special_char_ratio_valid, min_ratio=min_ratio, max_ratio=max_ratio)
     
-    # 调用 dataset.filter
+    # Apply dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
         max_workers=8, 

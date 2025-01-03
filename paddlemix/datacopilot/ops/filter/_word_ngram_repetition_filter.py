@@ -1,48 +1,48 @@
 from typing import Optional
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 from functools import partial
 import numpy as np
 
 
 def is_word_ngram_valid(item, rep_len: int = 10, min_ratio: float = 0.0, max_ratio: float = 0.5) -> bool:
     """
-    检查会话的词 n-gram 重复比例是否在指定范围内。
+    Checks whether the word n-gram repetition ratio in the conversation is within the specified range.
 
     Args:
-        item (dict): 包含会话信息的字典。
-        rep_len (int): n-gram 的长度，默认为 10。
-        min_ratio (float): 最小重复比例，默认为 0.0。
-        max_ratio (float): 最大重复比例，默认为 0.5。
+        item (dict): A dictionary containing conversation information.
+        rep_len (int): Length of the n-gram. Default is 10.
+        min_ratio (float): Minimum repetition ratio. Default is 0.0.
+        max_ratio (float): Maximum repetition ratio. Default is 0.5.
 
     Returns:
-        bool: 如果重复比例在 [min_ratio, max_ratio] 范围内，返回 True；否则返回 False。
+        bool: True if the repetition ratio is within [min_ratio, max_ratio], otherwise False.
     """
-    # 拼接 conversations 内容
+    # Concatenate conversation content
     user_conv = '\n\n'.join(
         ''.join(conversation) for conversation in item['conversations']
     ).replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
 
-    # 如果文本长度小于 n-gram 长度，直接返回 False
-    if len(user_conv.split()) < rep_len:  # 基于单词计数
+    # Return False if the text length is smaller than the n-gram length
+    if len(user_conv.split()) < rep_len:  # Based on word count
         return False
 
-    # 生成 n-grams
-    words = user_conv.split()  # 使用空格分词
+    # Generate n-grams
+    words = user_conv.split()  # Split by whitespace
     word_ngrams = [
         ' '.join(words[i:i + rep_len])
         for i in range(len(words) - rep_len + 1)
     ]
 
-    # 统计每个 n-gram 的频率
+    # Count the frequency of each n-gram
     freq_word_ngrams = {}
     for ngram in word_ngrams:
         freq_word_ngrams[ngram] = freq_word_ngrams.get(ngram, 0) + 1
 
-    # 如果没有有效 n-gram，直接返回 False
+    # Return False if there are no valid n-grams
     if len(freq_word_ngrams) == 0:
         return False
 
-    # 计算重复 n-gram 的比例
+    # Calculate the ratio of repetitive n-grams
     freq_values = list(freq_word_ngrams.values())
     total_ngrams = sum(freq_values)
     num_no_rep_ngrams = len([freq for freq in freq_values if freq == 1])
@@ -52,7 +52,7 @@ def is_word_ngram_valid(item, rep_len: int = 10, min_ratio: float = 0.0, max_rat
     )
     rep_ratio = sum(sorted(freq_values, reverse=True)[:num_rep_ngrams]) / total_ngrams
 
-    # 判断是否在指定范围内
+    # Check if the ratio is within the specified range
     return min_ratio <= rep_ratio <= max_ratio
 
 
@@ -64,22 +64,22 @@ def word_ngram_repetition_filter(
     max_ratio: Optional[float] = 0.2
 ) -> MMDataset:
     """
-    根据会话的词 n-gram 重复比例过滤数据集。
+    Filters the dataset based on the word n-gram repetition ratio in the conversations.
 
     Args:
-        dataset (MMDataset): 待过滤的数据集。
-        rep_len (int): n-gram 的长度，默认为 10。
-        min_ratio (float): 最小重复比例，默认为 0.0。
-        max_ratio (float): 最大重复比例，默认为 0.5。
+        dataset (MMDataset): The dataset to be filtered.
+        rep_len (int): Length of the n-gram. Default is 10.
+        min_ratio (float): Minimum repetition ratio. Default is 0.0.
+        max_ratio (float): Maximum repetition ratio. Default is 0.2.
 
     Returns:
-        MMDataset: 过滤后的数据集。
+        MMDataset: The filtered dataset.
     """
-    print("正在过滤词 n-gram 重复比例不符合要求的样本...")
-    # 创建过滤函数
+    print("Filtering samples with invalid word n-gram repetition ratios...")
+    # Create the filter function
     filter_func = partial(is_word_ngram_valid, rep_len=rep_len, min_ratio=min_ratio, max_ratio=max_ratio)
     
-    # 调用 dataset.filter
+    # Apply dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
         max_workers=8, 
@@ -87,4 +87,3 @@ def word_ngram_repetition_filter(
     )
     
     return filtered_dataset
-

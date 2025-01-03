@@ -1,24 +1,22 @@
 import os
 from typing import Optional
 from functools import partial
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 from paddlenlp.transformers import AutoTokenizer
 import sys
 
-# 默认使用的 tokenizer 模型
-DEFAULT_TOKENIZER = "Qwen/Qwen2.5-0.5B"
 
-# 定义 Token 过滤函数
+# Define the function to compute token count
 def compute_token_count(user_conv: str, tokenizer: AutoTokenizer) -> int:
     """
-    计算样本（会话）的 token 数量。
+    Compute the number of tokens in the sample (conversation).
 
     Args:
-        user_conv (str): 合并后的对话文本。
-        tokenizer (AutoTokenizer): 用于 token 化的 tokenizer 实例。
+        user_conv (str): Merged conversation text.
+        tokenizer (AutoTokenizer): Tokenizer instance used for tokenization.
 
     Returns:
-        int: 该样本的 token 数量。
+        int: The number of tokens in the sample.
     """
     tokens = tokenizer(user_conv, truncation=True, return_tensors="pd", use_fast=True)["input_ids"].flatten()
     return len(tokens)
@@ -26,40 +24,40 @@ def compute_token_count(user_conv: str, tokenizer: AutoTokenizer) -> int:
 @register()
 def token_num_filter(
     dataset, 
-    tokenizer_model: str = DEFAULT_TOKENIZER, 
+    tokenizer_model: str = "Qwen/Qwen2.5-7B", 
     min_tokens: Optional[int] = 10, 
     max_tokens: Optional[int] = sys.maxsize
 ) -> MMDataset:
     """
-    根据样本中的 token 数量过滤数据集。
+    Filter the dataset based on the number of tokens in each sample.
 
     Args:
-        dataset (MMDataset): 待过滤的数据集。
-        tokenizer_model (str): 采用的 tokenizer 模型名称，默认为 `Qwen/Qwen2.5-0.5B`。
-        min_tokens (int): 最小 token 数量，默认值为 10。
-        max_tokens (int): 最大 token 数量，默认值为 `sys.maxsize`。
+        dataset (MMDataset): The dataset to be filtered.
+        tokenizer_model (str): Name of the tokenizer model to use, default is `Qwen/Qwen2.5-7B`.
+        min_tokens (int): Minimum number of tokens. Default is 10.
+        max_tokens (int): Maximum number of tokens. Default is `sys.maxsize`.
 
     Returns:
-        MMDataset: 过滤后的数据集。
+        MMDataset: The filtered dataset.
     """
-    print(f"正在基于 token 数量过滤样本，最小 token 数量: {min_tokens}, 最大 token 数量: {max_tokens}...")
+    print(f"Filtering samples based on token count: min tokens = {min_tokens}, max tokens = {max_tokens}...")
     
-    # 初始化 tokenizer
+    # Initialize the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
 
     def filter_func(item):
-        # 获取对话文本并清理
+        # Get and clean conversation text
         user_conv = '\n\n'.join(
             ''.join(conversation) for conversation in item['conversations']
-        ).replace('<image>', '').replace('\n', '')  # 清理 `<image>` 标签和换行符
+        ).replace('<image>', '').replace('\n', '')  # Clean `<image>` tags and newlines
 
-        # 计算 token 数量
+        # Compute the number of tokens
         num_tokens = compute_token_count(user_conv, tokenizer)
 
-        # 判断是否符合 token 数量范围
+        # Check if the token count is within the specified range
         return min_tokens <= num_tokens <= max_tokens
 
-    # 调用 dataset.filter
+    # Apply dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
         max_workers=8, 

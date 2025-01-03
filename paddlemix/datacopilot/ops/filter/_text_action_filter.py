@@ -1,55 +1,55 @@
 from typing import Optional
 from functools import partial
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 import spacy
 
 # python -m spacy download en_core_web_sm
 
-# 加载 spaCy 模型
+# Load spaCy model
 def load_spacy_model(lang: str):
     """
-    加载 spaCy 模型，根据指定的语言加载对应的模型。
+    Load the spaCy model based on the specified language.
 
     Args:
-        lang (str): 语言代码，支持 'en'（英语）和 'zh'（中文）。
+        lang (str): Language code, supports 'en' (English).
 
     Returns:
-        spacy.Language: spaCy 语言模型实例。
+        spacy.Language: An instance of the spaCy language model.
     """
     if lang == 'en':
-        return spacy.load("en_core_web_sm")  # 英语
+        return spacy.load("en_core_web_sm")  # English
     else:
         raise ValueError(f"Unsupported language: {lang}")
 
 
 def is_action_count_valid(item, nlp, min_action_num: int = 1) -> bool:
     """
-    检查样本中的动词数量是否大于等于指定的最小值。
+    Check if the number of verbs in the sample is greater than or equal to the specified minimum.
 
     Args:
-        item (dict): 包含文本信息的样本字典。
-        nlp (spacy.Language): 已加载的 spaCy 模型。
-        min_action_num (int): 最小动词数量，默认值为 1。
+        item (dict): A dictionary containing text information for the sample.
+        nlp (spacy.Language): Loaded spaCy model.
+        min_action_num (int): Minimum number of verbs. Default is 1.
 
     Returns:
-        bool: 如果动词数量大于等于 min_action_num，返回 True；否则返回 False。
+        bool: True if the number of verbs is greater than or equal to min_action_num; otherwise, False.
     """
-    # 获取文本内容并清理特殊字符
+    # Get the text content and clean special characters
     user_conv = '\n\n'.join(
         ''.join(conversation) for conversation in item['conversations']
     ).replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
 
-    # 使用 spaCy 模型处理文本
+    # Process the text using the spaCy model
     doc = nlp(user_conv)
 
-    # 根据语言选择动词检测规则
+    # Define rules for detecting verbs based on language
     action_poss = ['VERB']
     action_tags = ['VB', 'VBP', 'VBZ', 'VBD', 'VBG', 'VBN']
 
-    # 统计动词数量
+    # Count the number of verbs in the text
     num_actions = sum(1 for token in doc if token.pos_ in action_poss and token.tag_ in action_tags)
 
-    # 判断是否符合动词数量要求
+    # Check if the verb count meets the requirement
     return num_actions >= min_action_num
 
 
@@ -60,25 +60,25 @@ def text_action_filter(
     min_action_num: Optional[int] = 1
 ) -> MMDataset:
     """
-    根据样本中的动词数量过滤数据集。
+    Filter the dataset based on the number of verbs in the samples.
 
     Args:
-        dataset (MMDataset): 待过滤的数据集。
-        lang (str): 文本语言，支持 'en'（英语）和 'zh'（中文）。
-        min_action_num (int): 最小动词数量，默认值为 1。
+        dataset (MMDataset): The dataset to be filtered.
+        lang (str): Language of the text, supports 'en' (English).
+        min_action_num (int): Minimum number of verbs. Default is 1.
 
     Returns:
-        MMDataset: 过滤后的数据集。
+        MMDataset: The filtered dataset.
     """
-    print(f"正在基于语言 {lang} 和动词数量 {min_action_num} 过滤样本...")
+    print(f"Filtering samples based on language {lang} and minimum verb count {min_action_num}...")
     
-    # 加载 spaCy 模型，只加载一次
+    # Load the spaCy model (load once)
     nlp = load_spacy_model(lang)
 
-    # 创建过滤函数
+    # Create the filter function
     filter_func = partial(is_action_count_valid, nlp=nlp, min_action_num=min_action_num)
     
-    # 调用 dataset.filter
+    # Apply dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
         max_workers=8, 

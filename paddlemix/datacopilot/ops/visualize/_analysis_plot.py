@@ -1,67 +1,72 @@
 import matplotlib.pyplot as plt
-import os
 import numpy as np
-import json
+import os
+from typing import Dict, Any
+from collections import Counter
 
-def plot_data_statistics(data_statistics, output_dir):
-    """绘制 Data Statistics 图，显示会话数按 12 份划分的柱状图，并在右侧添加统计信息"""
-    total_records = data_statistics['total_records']
-    unique_images = data_statistics['unique_images']
-    total_conversations = data_statistics['total_conversations']
-    max_conversations = data_statistics['max_conversations']
-    min_conversations = data_statistics['min_conversations']
-    avg_conversations = data_statistics['avg_conversations']
+
+def plot_data_statistics(data_statistics: Dict[str, Any], output_dir: str):
+    """
+    Plot Data Statistics, displaying the number of conversations divided into bins,
+    and add statistical information on the right side.
+
+    Args:
+        data_statistics (dict): A dictionary containing dataset statistics.
+        output_dir (str): Directory to save the generated plot.
+    """
+    # Extract statistics
+    total_records = data_statistics.get('total_records', 0)
+    unique_images = data_statistics.get('unique_images', 0)
+    total_conversations = data_statistics.get('total_conversations', 0)
+    max_conversations = data_statistics.get('max_conversations', 0)
+    min_conversations = data_statistics.get('min_conversations', 0)
+    avg_conversations = data_statistics.get('avg_conversations', 0.0)
     valid_items = data_statistics.get("valid_items", [])
 
-    # 获取所有有效项的会话数
+    # Extract conversation counts
     conversation_counts = [
         len(item.get("conversations", [])) for item in valid_items
     ]
 
-    # 计算第5百分位数和第95百分位数
-    lower_percentile = np.percentile(conversation_counts, 5)
-    upper_percentile = np.percentile(conversation_counts, 95)
-    
-    # 根据第5和第95百分位数，计算剩余区间
-    lower_range_counts = [count for count in conversation_counts if count < lower_percentile]
-    upper_range_counts = [count for count in conversation_counts if count > upper_percentile]
-    middle_range_counts = [count for count in conversation_counts if lower_percentile <= count <= upper_percentile]
-    
-    # 分别计算这三部分的频率
-    num_bins_middle = 8
-    bins_middle = np.linspace(lower_percentile, upper_percentile, num_bins_middle + 1)
-    
-    # 创建标签
-    bin_labels = [f"< {int(lower_percentile)}"] + [f'{int(bins_middle[i])} to {int(bins_middle[i+1])}' for i in range(num_bins_middle)] + [f"> {int(upper_percentile)}"]
-    
-    # 计算每个区间的频率
-    conversation_freq = [0] * (num_bins_middle + 2)
-    for count in lower_range_counts:
-        conversation_freq[0] += 1
-    for count in upper_range_counts:
-        conversation_freq[-1] += 1
-    for count in middle_range_counts:
-        for i in range(num_bins_middle):
-            if bins_middle[i] <= count < bins_middle[i + 1]:
-                conversation_freq[i + 1] += 1
-                break
-    
-    # 创建一个宽度更大的图形，分为两部分
+    # Handle the case when conversation_counts is empty
+    if not conversation_counts:
+        print("No valid conversations found. Skipping data statistics plot.")
+        return
+
+    # Define the range for bins
+    min_count = min(conversation_counts)
+    max_count = max(conversation_counts)
+
+    # Ensure a valid range for bins
+    if min_count == max_count:
+        max_count += 1  # Extend the range slightly to create a valid bin
+
+    # Create bins for the number of Q&A pairs
+    num_bins = 10
+    bins = np.linspace(min_count, max_count, num_bins + 1)
+
+    # Calculate frequencies for each bin
+    conversation_freq, _ = np.histogram(conversation_counts, bins=bins)
+
+    # Create bin labels
+    bin_labels = [f"{int(bins[i])} to {int(bins[i + 1])}" for i in range(len(bins) - 1)]
+
+    # Create a wider figure split into two parts
     fig = plt.figure(figsize=(15, 6))
-    
-    # 左侧绘制柱状图
+
+    # Left: Bar chart for conversation ranges
     ax1 = fig.add_subplot(121)
     ax1.bar(bin_labels, conversation_freq, color='skyblue', edgecolor='black', alpha=0.7)
-    ax1.set_title("Data Statistics: Conversations by Range")
-    ax1.set_xlabel("Conversations Range")
+    ax1.set_title("Data Statistics: Q&A Pairs by Range")
+    ax1.set_xlabel("Number of Q&A Pairs (Range)")
     ax1.set_ylabel("Frequency")
     ax1.tick_params(axis='x', rotation=45)
-    
-    # 右侧添加统计信息
+
+    # Right: Statistical information
     ax2 = fig.add_subplot(122, facecolor='white')
     ax2.axis('off')
-    
-    # 定义统计信息文本
+
+    # Define statistics text
     stats_text = [
         f"Total Records: {total_records}",
         f"Unique Images: {unique_images}",
@@ -70,190 +75,263 @@ def plot_data_statistics(data_statistics, output_dir):
         f"Min Conversations: {min_conversations}",
         f"Avg Conversations: {avg_conversations:.2f}"
     ]
-    
-    # 在右侧白色画布上添加文本
+
+    # Add text to the right-side canvas
     for i, text in enumerate(stats_text):
-        ax2.text(0.1, 0.9 - i*0.1, text, fontsize=12, ha='left', va='center')
-    
-    # 调整布局并保存
+        ax2.text(0.1, 0.9 - i * 0.1, text, fontsize=12, ha='left', va='center')
+
+    # Adjust layout and save the plot
     plt.tight_layout()
+    os.makedirs(output_dir, exist_ok=True)
     plt.savefig(f"{output_dir}/00_data_statistics.png")
     plt.close()
+    
 
+    
 
-import matplotlib.pyplot as plt
-import numpy as np
+def plot_field_distribution(field_distribution: Dict[str, Any], output_dir: str):
+    """
+    Plot Field Distribution chart, including language distribution and basic statistics.
 
-def plot_field_distribution(field_distribution, output_dir):
-    """绘制 Field Distribution 图"""
-    human_message_count = field_distribution['human_message_count']
-    assistant_message_count = field_distribution['assistant_message_count']
-    mismatched_language_pairs_count = field_distribution['mismatched_language_pairs_count']
+    Args:
+        field_distribution (dict): A dictionary containing field distribution data.
+        output_dir (str): Directory to save the generated plot.
+    """
+    # Extract statistics with default values
+    human_message_count = field_distribution.get('human_message_count', 0)
+    assistant_message_count = field_distribution.get('assistant_message_count', 0)
+    mismatched_language_pairs_count = field_distribution.get('mismatched_language_pairs_count', 0)
 
-    # 语言分布，取前10
-    languages_distribution = field_distribution['languages_distribution']
+    # Language distribution, take the top 10
+    languages_distribution = field_distribution.get('languages_distribution', {})
     sorted_languages = sorted(languages_distribution.items(), key=lambda x: x[1], reverse=True)[:10]
-    languages, language_counts = zip(*sorted_languages)
+    if sorted_languages:
+        languages, language_counts = zip(*sorted_languages)
+    else:
+        languages, language_counts = [], []
 
-    # 创建一个宽图，分为两部分
+    # Create a figure split into two parts
     fig = plt.figure(figsize=(15, 6))
 
-    # 左侧绘制语言分布图
+    # Left: Language distribution bar chart
     ax1 = fig.add_subplot(121)
-    ax1.bar(languages, language_counts, color='lightgreen')
-    ax1.set_title("Language Distribution (Top 10)")
-    ax1.set_xlabel("Language")
-    ax1.set_ylabel("Count")
-    ax1.tick_params(axis='x', rotation=45)
+    if languages:
+        ax1.bar(languages, language_counts, color='lightgreen')
+        ax1.set_title("Language Distribution (Top 10)")
+        ax1.set_xlabel("Language")
+        ax1.set_ylabel("Count")
+        ax1.tick_params(axis='x', rotation=45)
+    else:
+        ax1.text(0.5, 0.5, "No Language Data", fontsize=12, ha='center', va='center')
+        ax1.set_title("Language Distribution")
+        ax1.axis('off')
 
-    # 右侧添加统计信息
+    # Right: Add statistical information
     ax2 = fig.add_subplot(122, facecolor='white')
     ax2.axis('off')
 
-    # 定义统计信息文本
+    # Define statistics text
     stats_text = [
         f"Human Message Count: {human_message_count}",
         f"Assistant Message Count: {assistant_message_count}",
         f"Mismatched Language Pairs: {mismatched_language_pairs_count}"
     ]
-    
-    # 在右侧白色画布上添加文本
-    for i, text in enumerate(stats_text):
-        ax2.text(0.1, 0.9 - i*0.1, text, fontsize=12, ha='left', va='center')
 
-    # 调整布局并保存
+    # Add text to the right-side canvas
+    for i, text in enumerate(stats_text):
+        ax2.text(0.1, 0.9 - i * 0.1, text, fontsize=12, ha='left', va='center')
+
+    # Adjust layout and save the plot
     plt.tight_layout()
+    os.makedirs(output_dir, exist_ok=True)
     plt.savefig(f"{output_dir}/01_field_distribution.png")
     plt.close()
 
 
+def plot_image_path_distribution(validation_result: Dict[str, Any], output_dir: str):
+    """
+    Plot Image Path Distribution chart, including missing paths and path statistics.
 
-def plot_image_path_distribution(validation_result, output_dir):
-    """绘制图片路径分布图，并显示统计信息"""
-    total_images = validation_result['total_images']
-    missing_images = validation_result['missing_images']
-    path_distribution = validation_result['path_distribution']
+    Args:
+        validation_result (dict): A dictionary containing image path validation results.
+        output_dir (str): Directory to save the generated plot.
+    """
+    # Extract statistics with default values
+    total_images = validation_result.get('total_images', 0)
+    missing_images = validation_result.get('missing_images', 0)
+    path_distribution = validation_result.get('path_distribution', {})
 
-    # 获取所有路径和对应的计数
-    paths, path_counts = zip(*path_distribution.items())
+    if path_distribution:
+        paths, path_counts = zip(*path_distribution.items())
+    else:
+        paths, path_counts = [], []
 
-    # 创建一个宽图，分为两部分
+    # Create a figure split into two parts
     fig = plt.figure(figsize=(15, 8))
 
-    # 左侧绘制路径分布图
+    # Left: Path distribution bar chart
     ax1 = fig.add_subplot(121)
-    ax1.bar(paths, path_counts, color='lightblue')
-    ax1.set_title("Image Path Distribution")
-    ax1.set_xlabel("Image Path")
-    ax1.set_ylabel("Image Count")
-    ax1.tick_params(axis='x', rotation=90)  # 旋转X轴标签，以便显示更多路径
+    if paths:
+        ax1.bar(paths, path_counts, color='lightblue')
+        ax1.set_title("Image Path Distribution")
+        ax1.set_xlabel("Image Path")
+        ax1.set_ylabel("Image Count")
+        ax1.tick_params(axis='x', rotation=90)
+    else:
+        ax1.text(0.5, 0.5, "No Path Data", fontsize=12, ha='center', va='center')
+        ax1.set_title("Image Path Distribution")
+        ax1.axis('off')
 
-    # 右侧添加统计信息
+    # Right: Add statistical information
     ax2 = fig.add_subplot(122, facecolor='white')
     ax2.axis('off')
 
-    # 定义统计信息文本
+    # Define statistics text
     stats_text = [
         f"Total Images: {total_images}",
         f"Missing Images: {missing_images}",
     ]
-    
-    # 在右侧白色画布上添加文本
-    for i, text in enumerate(stats_text):
-        ax2.text(0.1, 0.9 - i*0.1, text, fontsize=12, ha='left', va='center')
 
-    # 调整布局并保存
+    # Add text to the right-side canvas
+    for i, text in enumerate(stats_text):
+        ax2.text(0.1, 0.9 - i * 0.1, text, fontsize=12, ha='left', va='center')
+
+    # Adjust layout and save the plot
     plt.tight_layout()
+    os.makedirs(output_dir, exist_ok=True)
     plt.savefig(f"{output_dir}/02_image_path_distribution.png")
     plt.close()
 
 
 
-def plot_anomaly_statistics(anomaly_results, output_dir):
-    """绘制缺少字段和空对话的统计图，并保存异常项的JSON"""
-    missing_field_count = anomaly_results['missing_field_count']
-    empty_conversation_count = anomaly_results['empty_conversation_count']
+def plot_anomaly_statistics(anomaly_results: Dict[str, Any], output_dir: str):
+    """
+    Plot anomaly statistics, including missing fields and empty conversations.
 
-    # 创建一个柱状图，显示异常项数量
-    labels = ['Missing Fields', 'Empty Conversations']
-    counts = [missing_field_count, empty_conversation_count]
+    Args:
+        anomaly_results (dict): A dictionary containing anomaly statistics.
+        output_dir (str): Directory to save the generated plot.
+    """
+    try:
+        missing_field_count = anomaly_results.get('missing_field_count', 0)
+        empty_conversation_count = anomaly_results.get('empty_conversation_count', 0)
 
-    # 创建图表
-    plt.figure(figsize=(8, 5))
-    plt.bar(labels, counts, color=['lightcoral', 'lightblue'])
-    plt.title("Anomaly Statistics")
-    plt.xlabel("Anomaly Type")
-    plt.ylabel("Count")
+        # Create a bar chart for anomaly statistics
+        labels = ['Missing Fields', 'Empty Conversations']
+        counts = [missing_field_count, empty_conversation_count]
 
-    # 保存图表
-    plt.tight_layout()
-    plt.savefig(f"{output_dir}/03_anomaly_statistics.png")
-    plt.close()
+        plt.figure(figsize=(8, 5))
+        plt.bar(labels, counts, color=['lightcoral', 'lightblue'])
+        plt.title("Anomaly Statistics")
+        plt.xlabel("Anomaly Type")
+        plt.ylabel("Count")
 
+        # Save the plot
+        plt.tight_layout()
+        os.makedirs(output_dir, exist_ok=True)
+        plt.savefig(f"{output_dir}/03_anomaly_statistics.png")
+        plt.close()
 
-
-
-import matplotlib.pyplot as plt
-
-def plot_token_distribution(token_analysis, role, output_dir):
-    """绘制高频词和低频词的分布图"""
-    high_freq_tokens = token_analysis['high_freq_tokens']
-    low_freq_tokens = token_analysis['low_freq_tokens']
-
-    # 提取高频词和低频词
-    high_tokens, high_counts = zip(*high_freq_tokens.items())
-    low_tokens, low_counts = zip(*low_freq_tokens.items())
-
-    # 创建一个新的图形
-    plt.figure(figsize=(12, 6))
-
-    # 高频词
-    plt.subplot(121)
-    plt.bar(high_tokens, high_counts, color='green')
-    plt.title(f"{role} High Frequency Tokens")
-    plt.xlabel("Token")
-    plt.ylabel("Count")
-    plt.xticks(rotation=45)
-
-    # 低频词
-    plt.subplot(122)
-    plt.bar(low_tokens, low_counts, color='red')
-    plt.title(f"{role} Low Frequency Tokens")
-    plt.xlabel("Token")
-    plt.ylabel("Count")
-    plt.xticks(rotation=45)
-
-    # 调整布局
-    plt.tight_layout()
-
-    # 保存图像
-    plt.savefig(f"{output_dir}/04_{role}_token_analysis.png")
-    plt.close()
+    except Exception as e:
+        print(f"Error in plot_anomaly_statistics: {e}")
 
 
-def visualize_results(results, output_dir, analysis_flags):
-    """统一绘制所有分析结果，根据传入的标志控制绘制哪些分析结果"""
-    
-    # Data Statistics: 如果设置了 data_statistics 标志，则绘制数据统计图
-    if analysis_flags.get("data_statistics", False):
-        plot_data_statistics(results["data_statistics"], output_dir)
-    
-    # Field Distribution: 如果设置了 field_distribution 标志，则绘制字段分布图
-    if analysis_flags.get("field_distribution", False):
-        plot_field_distribution(results["field_distribution"], output_dir)
+def plot_token_distribution(token_analysis: Dict[str, Any], role: str, output_dir: str):
+    """
+    Plot high-frequency and low-frequency tokens for a specific role.
 
-    # Path Validation: 如果设置了 path_validation 标志，则绘制图片路径验证图
-    if analysis_flags.get("path_validation", False):
-        plot_image_path_distribution(results["path_validation"], output_dir)
-    
-    # Path Validation & Anomaly Detection: 如果设置了 anomaly_detection 标志，则绘制异常检测统计图
-    if analysis_flags.get("anomaly_detection", False):
-        plot_anomaly_statistics(results["anomaly_detection"], output_dir)
+    Args:
+        token_analysis (dict): A dictionary containing token analysis results.
+        role (str): Role name, e.g., "human" or "assistant".
+        output_dir (str): Directory to save the generated plot.
+    """
+    try:
+        high_freq_tokens = token_analysis.get('high_freq_tokens', {})
+        low_freq_tokens = token_analysis.get('low_freq_tokens', {})
 
-    # Token Analysis: Human: 如果设置了 token_analysis 标志且包含 "human" 数据，则绘制人类的 Token 分布图
-    if analysis_flags.get("token_analysis", False) and "human" in results.get("token_analysis", {}):
-        plot_token_distribution(results["token_analysis"]["human"], "human", output_dir)
+        # Extract high-frequency and low-frequency tokens
+        if high_freq_tokens:
+            high_tokens, high_counts = zip(*high_freq_tokens.items())
+        else:
+            high_tokens, high_counts = [], []
 
-    # Token Analysis: Assistant: 如果设置了 token_analysis 标志且包含 "assistant" 数据，则绘制助手的 Token 分布图
-    if analysis_flags.get("token_analysis", False) and "assistant" in results.get("token_analysis", {}):
-        plot_token_distribution(results["token_analysis"]["assistant"], "assistant", output_dir)
+        if low_freq_tokens:
+            low_tokens, low_counts = zip(*low_freq_tokens.items())
+        else:
+            low_tokens, low_counts = [], []
+
+        # Create a figure
+        plt.figure(figsize=(12, 6))
+
+        # High-frequency tokens
+        plt.subplot(121)
+        if high_tokens:
+            plt.bar(high_tokens, high_counts, color='green')
+            plt.title(f"{role.capitalize()} High Frequency Tokens")
+            plt.xlabel("Token")
+            plt.ylabel("Count")
+            plt.xticks(rotation=45)
+        else:
+            plt.text(0.5, 0.5, "No High Frequency Tokens", fontsize=12, ha='center', va='center')
+            plt.title(f"{role.capitalize()} High Frequency Tokens")
+            plt.axis('off')
+
+        # Low-frequency tokens
+        plt.subplot(122)
+        if low_tokens:
+            plt.bar(low_tokens, low_counts, color='red')
+            plt.title(f"{role.capitalize()} Low Frequency Tokens")
+            plt.xlabel("Token")
+            plt.ylabel("Count")
+            plt.xticks(rotation=45)
+        else:
+            plt.text(0.5, 0.5, "No Low Frequency Tokens", fontsize=12, ha='center', va='center')
+            plt.title(f"{role.capitalize()} Low Frequency Tokens")
+            plt.axis('off')
+
+        # Adjust layout and save the plot
+        plt.tight_layout()
+        os.makedirs(output_dir, exist_ok=True)
+        plt.savefig(f"{output_dir}/04_{role}_token_analysis.png")
+        plt.close()
+
+    except Exception as e:
+        print(f"Error in plot_token_distribution for role '{role}': {e}")
+
+
+def visualize_results(results: Dict[str, Any], output_dir: str, analysis_flags: Dict[str, bool]):
+    """
+    Unified visualization for all analysis results.
+
+    Args:
+        results (dict): A dictionary containing all analysis results.
+        output_dir (str): Directory to save the results.
+        analysis_flags (dict): Flags to control which analyses to visualize.
+    """
+    try:
+        # Data Statistics
+        if analysis_flags.get("data_statistics", False):
+            plot_data_statistics(results.get("data_statistics", {}), output_dir)
+
+        # Field Distribution
+        if analysis_flags.get("field_distribution", False):
+            plot_field_distribution(results.get("field_distribution", {}), output_dir)
+
+        # Path Validation
+        if analysis_flags.get("path_validation", False):
+            plot_image_path_distribution(results.get("path_validation", {}), output_dir)
+
+        # Anomaly Detection
+        if analysis_flags.get("anomaly_detection", False):
+            plot_anomaly_statistics(results.get("anomaly_detection", {}), output_dir)
+
+        # Token Analysis for Human
+        if analysis_flags.get("token_analysis", False) and "human" in results.get("token_analysis", {}):
+            plot_token_distribution(results["token_analysis"]["human"], "human", output_dir)
+
+        # Token Analysis for Assistant
+        if analysis_flags.get("token_analysis", False) and "assistant" in results.get("token_analysis", {}):
+            plot_token_distribution(results["token_analysis"]["assistant"], "assistant", output_dir)
+
+    except Exception as e:
+        print(f"Error in visualize_results: {e}")

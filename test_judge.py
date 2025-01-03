@@ -1,5 +1,5 @@
 from paddlemix.datacopilot.core import MMDataset
-from paddlemix.datacopilot.ops.filter._judge_analysis import gpt_responses_judge
+from paddlemix.datacopilot.ops.filter._llm_judge_filter import gpt_responses_judge
 from paddlemix.datacopilot.ops.analysis._description_analysis import description_analysis
 from paddlemix.datacopilot.ops.analysis._quality_analysis import analyze_image_caption_with_metrics
 

@@ -1,60 +1,59 @@
 from typing import Optional
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 from functools import partial
 
 
 def is_max_line_length_valid(item, min_length: int = 10, max_length: float = float('inf')) -> bool:
     """
-    检查会话的最大行长度是否在指定范围内。
+    Checks whether the maximum line length in the conversations is within the specified range.
 
     Args:
-        item (dict): 包含会话信息的字典。
-        min_length (int): 最小最大行长度，默认值为 10。
-        max_length (float): 最大最大行长度，默认值为无穷大。
+        item (dict): A dictionary containing conversation information.
+        min_length (int): Minimum maximum line length. Default is 10.
+        max_length (float): Maximum maximum line length. Default is infinity.
 
     Returns:
-        bool: 如果最大行长度在 [min_length, max_length] 范围内，返回 True；否则返回 False。
+        bool: True if the maximum line length is within [min_length, max_length], False otherwise.
     """
-    # 清理 conversations 中的问答对，去除 <image>
+    # Clean the conversations by removing <image> placeholders
     cleaned_conversations = [
         [q.replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '').strip(), 
         a.strip()]
         for q, a in item['conversations']
     ]
 
-    # 计算每个问答对中的最大长度
+    # Calculate the maximum line length in the conversations
     max_line_length = 0
     for q, a in cleaned_conversations:
-        # 比较问题和答案的长度，记录最大值
+        # Compare the length of questions and answers, and track the maximum
         max_line_length = max(max_line_length, len(q), len(a))
 
-    # 判断是否在指定范围内
+    # Check if the maximum line length is within the specified range
     return min_length <= max_line_length <= max_length
-
 
 
 @register()
 def maximum_line_length_filter(
     dataset, 
     min_length: Optional[int] = 10, 
-    max_length: Optional[float] = float('inf')  # 默认无上限
+    max_length: Optional[float] = float('inf')  # No upper limit by default
 ) -> MMDataset:
     """
-    根据会话的最大行长度过滤数据集。
+    Filters the dataset based on the maximum line length in conversations.
 
     Args:
-        dataset (MMDataset): 待过滤的数据集。
-        min_length (int): 最小最大行长度，默认为 10。
-        max_length (float): 最大最大行长度，默认为无穷大（无上限）。
+        dataset (MMDataset): The dataset to be filtered.
+        min_length (int): Minimum maximum line length. Default is 10.
+        max_length (float): Maximum maximum line length. Default is infinity.
 
     Returns:
-        MMDataset: 过滤后的数据集。
+        MMDataset: The filtered dataset.
     """
-    print("正在过滤最大行长度不符合要求的样本...")
-    # 创建过滤函数
+    print("Filtering samples with invalid maximum line lengths...")
+    # Create the filter function
     filter_func = partial(is_max_line_length_valid, min_length=min_length, max_length=max_length)
     
-    # 调用 dataset.filter
+    # Apply dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
         max_workers=8, 

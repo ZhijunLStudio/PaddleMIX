@@ -1,83 +1,82 @@
 from typing import Optional
 from functools import partial
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 import spacy
 
 # python -m spacy download en_core_web_sm
 
-# 加载 spaCy 模型
+# Load spaCy model
 def load_spacy_model(lang: str):
     """
-    加载 spaCy 模型，根据指定的语言加载对应的模型。
+    Load the spaCy model based on the specified language.
 
     Args:
-        lang (str): 语言代码，支持 'en'（英语）。
+        lang (str): Language code, supports 'en' (English).
 
     Returns:
-        spacy.Language: spaCy 语言模型实例。
+        spacy.Language: An instance of the spaCy language model.
     """
     if lang == 'en':
-        return spacy.load("en_core_web_sm")  # 英语
+        return spacy.load("en_core_web_sm")  # English
     else:
         raise ValueError(f"Unsupported language: {lang}")
 
 
 def is_entity_dependency_valid(item, nlp, min_dependency_num: int = 1, any_or_all: str = 'any') -> bool:
     """
-    检查样本中的实体依赖关系是否符合指定的条件。
+    Check if the entity dependency relationships in the sample meet the specified conditions.
 
     Args:
-        item (dict): 包含文本信息的样本字典。
-        nlp (spacy.Language): 已加载的 spaCy 模型。
-        min_dependency_num (int): 每个实体的最小依赖边数量，默认值为 1。
-        any_or_all (str): 筛选策略，'any' 表示只要有一个实体满足条件即可，
-        'all' 表示所有实体都必须满足条件。
+        item (dict): A dictionary containing text information for the sample.
+        nlp (spacy.Language): Loaded spaCy model.
+        min_dependency_num (int): Minimum number of dependency edges per entity. Default is 1.
+        any_or_all (str): Filtering strategy. 'any' means at least one entity must meet the condition,
+                          'all' means all entities must meet the condition.
 
     Returns:
-        bool: 如果实体的依赖关系符合要求，返回 True；否则返回 False。
+        bool: True if the entity dependencies meet the requirements, otherwise False.
     """
-    # 获取文本内容并清理特殊字符
+    # Get the text content and clean special characters
     user_conv = '\n\n'.join(
         ''.join(conversation) for conversation in item['conversations']
     ).replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
-    # print("user_conv:", user_conv)
 
-    # 使用 spaCy 模型处理文本
+    # Process the text using the spaCy model
     doc = nlp(user_conv)
 
-    # 定义实体的 POS 和 Tag 规则
-    entity_poss = ['NOUN', 'PROPN', 'PRON']  # 名词、专有名词、代词
+    # Define rules for identifying entities
+    entity_poss = ['NOUN', 'PROPN', 'PRON']  # Nouns, proper nouns, pronouns
     entity_tags = ['NN', 'NR', 'PN', 'NNS', 'NNP', 'NNPS', 'PRP']
 
-    # 识别实体并初始化依赖计数
+    # Identify entities and initialize dependency counts
     entity_to_dependency_nums = {}
     for token in doc:
         if token.pos_ in entity_poss and token.tag_ in entity_tags:
             entity_to_dependency_nums[token] = 0
 
-    # 计算实体的依赖边数量
+    # Count dependency edges for each entity
     for obj in entity_to_dependency_nums:
-        if obj.dep_ != 'ROOT':  # 非根节点计数
+        if obj.dep_ != 'ROOT':  # Exclude root nodes
             entity_to_dependency_nums[obj] += 1
 
     for token in doc:
-        # 跳过标点符号
+        # Skip punctuation
         if token.pos_ == 'PUNCT':
             continue
 
-        # 如果 token 的头节点是某个实体，则增加依赖计数
+        # If the token's head is an entity, increment the dependency count
         if token.head in entity_to_dependency_nums.keys() and token.dep_ != 'ROOT':
             entity_to_dependency_nums[token.head] += 1
 
-    # 获取所有实体的依赖边数量
+    # Get dependency counts for all entities
     dependency_counts = [n for _, n in entity_to_dependency_nums.items()]
 
-    # 筛选逻辑
+    # Filtering logic
     if any_or_all == 'any':
-        # 只要有一个实体满足依赖条件即可
+        # At least one entity must meet the dependency condition
         return any(count >= min_dependency_num for count in dependency_counts)
     elif any_or_all == 'all':
-        # 所有实体都必须满足依赖条件
+        # All entities must meet the dependency condition
         return all(count >= min_dependency_num for count in dependency_counts)
     else:
         raise ValueError(f"Unsupported any_or_all value: {any_or_all}")
@@ -91,27 +90,27 @@ def text_entity_dependency_filter(
     any_or_all: str = 'any'
 ) -> MMDataset:
     """
-    根据样本中的实体依赖关系过滤数据集。
+    Filter the dataset based on entity dependency relationships in the samples.
 
     Args:
-        dataset (MMDataset): 待过滤的数据集。
-        lang (str): 文本语言，支持 'en'（英语）。
-        min_dependency_num (int): 每个实体的最小依赖边数量，默认值为 1。
-        any_or_all (str): 筛选策略，'any' 表示只要有一个实体满足条件即可，
-                          'all' 表示所有实体都必须满足条件。
+        dataset (MMDataset): The dataset to be filtered.
+        lang (str): Language of the text, supports 'en' (English).
+        min_dependency_num (int): Minimum number of dependency edges per entity. Default is 1.
+        any_or_all (str): Filtering strategy, 'any' means at least one entity must meet the condition,
+                          'all' means all entities must meet the condition.
 
     Returns:
-        MMDataset: 过滤后的数据集。
+        MMDataset: The filtered dataset.
     """
-    print(f"正在基于语言 {lang} 和实体依赖条件 {any_or_all} 过滤样本，最小依赖边数量为 {min_dependency_num}...")
+    print(f"Filtering samples based on language {lang} and entity dependency condition ({any_or_all}), minimum dependency edges: {min_dependency_num}...")
     
-    # 加载 spaCy 模型，只加载一次
+    # Load the spaCy model (load once)
     nlp = load_spacy_model(lang)
 
-    # 创建过滤函数
+    # Create the filter function
     filter_func = partial(is_entity_dependency_valid, nlp=nlp, min_dependency_num=min_dependency_num, any_or_all=any_or_all)
     
-    # 调用 dataset.filter
+    # Apply dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
         max_workers=8, 

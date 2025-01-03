@@ -3,7 +3,7 @@ from paddlemix.datacopilot.core import MMDataset, register
 from tqdm import tqdm
 from typing import Dict, List
 
-# 预置的四种评估指标及其提示词
+# Predefined evaluation metrics and corresponding prompt templates
 CRITERIA_PROMPTS = {
     "image_text_matching": """Please evaluate if the provided text caption accurately represents the main features and objects of the image. The caption doesn't need to detail every aspect of the image, but it should capture its primary theme. Rate the overall quality of the text caption's match to the image on a scale of 1-100, considering the criteria mentioned.""",
     "object_detail_fulfillment": """Please evaluate the text caption to determine if it provides detailed descriptions of objects that align with the image. Specifically, assess if the caption sufficiently describes the color, size, position, shape, material, etc., of the objects. Afterward, rate the caption's overall accuracy in capturing object details from the image on a scale of 1-100, based on the criteria provided.""",
@@ -16,7 +16,7 @@ DEFAULT_PROMPT_TEMPLATE = """Text Caption: {caption}
 {criteria}
 A higher score indicates a higher level of {aspect}. Ensure that your scoring is nuanced and uses the entire range from 0 to 100, reflecting the subtle differences. The score should be given as an integer, with each number between 0 and 100 considered as a potential score, avoiding the tendency to round to multiples of 10. Please first output a single line containing the value indicating the scores. In the subsequent line, please provide a comprehensive explanation of your evaluation, avoiding any potential bias."""
 
-# 加载模型的函数，支持传入模型名称
+# Load the model and tokenizer
 def load_model(model_name: str):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name, dtype="float16")
@@ -24,85 +24,97 @@ def load_model(model_name: str):
 
 def evaluate_image_caption(
     dataset: MMDataset, 
-    model_name: str = "Qwen/Qwen2.5-0.5B"
+    model_name: str = "Qwen/Qwen2.5-7B", 
+    analysis_flags: Dict[str, bool] = None
 ) -> Dict:
     """
-    根据指定的指标评估图文质量。
-    :param dataset: MMDataset 数据集
-    :param model_name: 模型名称
-    :return: 每个数据项的评估结果
+    Evaluate the quality of image captions based on predefined metrics.
+
+    Args:
+        dataset (MMDataset): The dataset containing image paths and conversations.
+        model_name (str): Name of the model to use.
+        analysis_flags (Dict[str, bool]): Flags to control which metrics to evaluate.
+
+    Returns:
+        Dict: Evaluation results for each dataset item.
     """
-    # 加载模型
+    # Load the model
     tokenizer, model = load_model(model_name)
-    
-    # 存储最终结果
+
+    # Final results storage
     results = {}
 
-    # 默认开启的评估指标
-    selected_metrics = list(CRITERIA_PROMPTS.keys())
+    # Determine which metrics to evaluate based on analysis_flags
+    if analysis_flags is None:
+        selected_metrics = list(CRITERIA_PROMPTS.keys())  # Default: All metrics
+    else:
+        selected_metrics = [key for key, value in analysis_flags.items() if value]
 
-    # 分批次进行推理，每次处理4个数据
+    # Process in batches, each batch handles a set of data
     batch_size = 1
     batch_data = []
 
     for item in tqdm(dataset):
-        item_id = item["image"]  # 使用 image 作为 item_id
+        item_id = item["image"]  # Use image path as item_id
         conversations = item["conversations"]
         
-        # 拼接每个 item 下所有的问答对
+        # Combine all Q&A pairs into a single conversation
         full_caption = ""
         for conversation in conversations:
             question, answer = conversation
             question = question.replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
             full_caption += f"Question: {question}\nAnswer: {answer}\n"
 
-        # 对每个 selected_metric 进行评估
+        # Evaluate each selected metric
         for metric in selected_metrics:
             criteria = CRITERIA_PROMPTS[metric]
             aspect = metric.replace("_", " ")
             caption = full_caption
 
-            # 生成完整的 prompt
+            # Generate the full prompt
             full_prompt = DEFAULT_PROMPT_TEMPLATE.format(
                 caption=caption, 
                 criteria=criteria, 
                 aspect=aspect
             )
             
-            # 将生成的 prompt 存储到批次中
+            # Store the generated prompt in the current batch
             batch_data.append(full_prompt)
 
-            # 当批次大小达到 batch_size 时，进行推理
+            # Perform inference when batch size is reached
             if len(batch_data) == batch_size:
-                print("batch_data:", batch_data)
-                # 使用 tokenizer 编码输入
+                # Tokenize input
                 input_features = tokenizer(batch_data, return_tensors="pd", padding=True)
 
-                # 模型生成输出
+                # Model inference
                 outputs = model.generate(**input_features, max_length=256)
 
-                # 解码生成结果
+                # Decode the output
                 decoded_outputs = tokenizer.batch_decode(outputs[0], skip_special_tokens=True)
 
-                # 存储结果
+                # Store results
                 for idx, decoded_output in enumerate(decoded_outputs):
-                    # 这里根据 item_id 和 metric 来存储结果
                     if item_id not in results:
                         results[item_id] = {}
                     results[item_id][metric] = decoded_output
-                    print(f"item_id:{item_id}, decoded_output:{decoded_output}")
 
-                # 清空当前批次
+                # Clear the current batch
                 batch_data = []
-                print("----------------------------------")
 
     return results
 
 @register()
-def analyze_image_caption_with_metrics(dataset: MMDataset, model_name: str):
+def quality_analysis(dataset: MMDataset, model_name: str, quality_analysis_flags: Dict[str, bool] = None):
     """
-    分析多轮对话的图文描述质量。
+    Analyze the quality of multi-turn conversations for image captioning.
+
+    Args:
+        dataset (MMDataset): The dataset containing image paths and conversations.
+        model_name (str): Name of the model to use.
+        analysis_flags (Dict[str, bool]): Flags to control which metrics to evaluate.
+
+    Returns:
+        Dict: Evaluation results for each dataset item.
     """
-    results = evaluate_image_caption(dataset, model_name)
-    
+    results = evaluate_image_caption(dataset, model_name, quality_analysis_flags)
     return results

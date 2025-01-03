@@ -3,91 +3,90 @@ import fasttext
 import requests
 from typing import Optional, List, Union
 from functools import partial
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 
-FASTTEXT_MODEL_PATH = "/home/lizhijun/llm/PaddleMix/lid.176.bin"
+FASTTEXT_MODEL_PATH = "lid.176.bin"
 FASTTEXT_MODEL_URL = "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin"
 
-# 检查并加载 FastText 模型
+# Check and load the FastText model
 def load_fasttext_model(model_path: str, model_url: str) -> fasttext.FastText._FastText:
     if not os.path.exists(model_path):
-        print(f"FastText 模型文件 {model_path} 不存在，正在下载...")
+        print(f"FastText model file {model_path} not found. Downloading...")
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
         response = requests.get(model_url, stream=True)
         with open(model_path, 'wb') as f:
             f.write(response.content)
-        print(f"FastText 模型已下载到 {model_path}")
-    print(f"正在加载 FastText 模型 {model_path}...")
+        print(f"FastText model downloaded to {model_path}")
+    print(f"Loading FastText model from {model_path}...")
     return fasttext.load_model(model_path)
 
-# 加载 FastText 模型
-lang_model = load_fasttext_model(FASTTEXT_MODEL_PATH, FASTTEXT_MODEL_URL)
-
-
-
-# 判断样本语言是否符合要求
-def is_language_valid(item, lang: Optional[Union[str, List[str]]] = None, min_score: float = 0.8) -> bool:
+# Check if the sample's language meets the requirements
+def is_language_valid(item, lang: Optional[Union[str, List[str]]] = None, min_score: float = 0.8, lang_model: fasttext.FastText._FastText = None) -> bool:
     """
-    检查样本的语言是否符合指定语言，并且置信分数大于等于指定最小值。
+    Check if the sample's language matches the specified language(s) and has a confidence score above the minimum threshold.
 
     Args:
-        item (dict): 包含文本信息的样本。
-        lang (Union[str, List[str], None]): 允许的语言代码，可以是单个字符串、多语言列表或 None。
-        min_score (float): 最小语言置信分数，默认值为 0.8。
+        item (dict): A sample containing text information.
+        lang (Union[str, List[str], None]): Allowed language codes (a string, list of strings, or None).
+        min_score (float): Minimum confidence score for the language. Default is 0.8.
+        lang_model (fasttext.FastText._FastText): Loaded FastText model.
 
     Returns:
-        bool: 如果样本的语言符合要求且置信分数足够高，返回 True；否则返回 False。
+        bool: True if the sample's language matches the requirements and has a high enough confidence score; otherwise, False.
     """
 
+    # Concatenate conversations into a single string for language detection
     user_conv = '\n\n'.join(
-    ''.join(conversation) for conversation in item['conversations']
+        ''.join(conversation) for conversation in item['conversations']
     ).replace('<image>', '').replace('\n', '')
-
 
     try:
         prediction = lang_model.predict(user_conv, k=1)
         lang_id = prediction[0][0].replace("__label__", "")
         lang_score = prediction[1][0]
     except Exception as e:
-        print(f"语言检测失败，错误信息: {e}")
+        print(f"Language detection failed. Error: {e}")
         return False
 
-    # 检查语言代码和置信分数
+    # Check language code and confidence score
     if lang:
         if isinstance(lang, str):
-            lang = [lang]  # 如果是单个字符串，转为列表
+            lang = [lang]  # Convert single string to list
         return lang_id in lang and lang_score >= min_score
     else:
-        # 如果未指定语言，仅检查置信分数
+        # If no language is specified, only check confidence score
         return lang_score >= min_score
-
 
 @register()
 def language_id_filter(
     dataset, 
     lang: Optional[Union[str, List[str]]] = None, 
-    min_score: float = 0.8
+    min_score: float = 0.8,
 ) -> MMDataset:
     """
-    根据样本的语言ID和置信分数过滤数据集。
+    Filter the dataset based on the language ID and confidence score of the samples.
 
     Args:
-        dataset (MMDataset): 待过滤的数据集。
-        lang (Union[str, List[str], None]): 允许的语言代码，可以是单个字符串、多语言列表或 None。
-        min_score (float): 最小语言置信分数，默认值为 0.8。
+        dataset (MMDataset): Input dataset.
+        lang (Union[str, List[str], None]): Allowed language codes (a string, list of strings, or None).
+        min_score (float): Minimum confidence score for the language. Default is 0.8.
 
     Returns:
-        MMDataset: 过滤后的数据集。
+        MMDataset: The filtered dataset.
     """
-    print("正在过滤不符合语言ID要求的样本...")
-    # 创建过滤函数
-    filter_func = partial(is_language_valid, lang=lang, min_score=min_score)
-    
-    # 调用 dataset.filter
+    print("Filtering samples that do not meet the language ID requirements...")
+
+    # Load the FastText model once
+    lang_model = load_fasttext_model(FASTTEXT_MODEL_PATH, FASTTEXT_MODEL_URL)
+
+    # Create the filter function
+    filter_func = partial(is_language_valid, lang=lang, min_score=min_score, lang_model=lang_model)
+
+    # Apply dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
         max_workers=8, 
         progress=True
     )
-    
+
     return filtered_dataset

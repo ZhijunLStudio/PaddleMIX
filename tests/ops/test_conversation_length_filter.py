@@ -10,7 +10,7 @@ dataset = MMDataset.from_json(anno_path)
 print("Initial dataset size:", len(dataset))
 
 # Apply the conversation length filter operator
-max_length = 2048  # Set the maximum allowed conversation length
+max_length = 1024  # Set the maximum allowed conversation length
 dataset = dataset.conversation_length_filter(max_length=max_length)
 
 # Print the size of the filtered dataset

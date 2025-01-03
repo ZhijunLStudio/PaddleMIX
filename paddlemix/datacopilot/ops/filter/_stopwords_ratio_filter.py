@@ -1,44 +1,59 @@
 from typing import Optional
-from ...core import T, MMDataset, register
+from ...core import MMDataset, register
 from functools import partial
 import nltk
 from nltk.corpus import stopwords
+import os
 
-# 下载 NLTK 的停用词资源
-# nltk.download('stopwords')
+# Global variable to track stopwords set
+_stop_words = None
 
-# 获取停用词列表
-# stop_words = set(stopwords.words('english'))
-
-
-def is_stopwords_ratio_valid(item, min_ratio: float = 0.25) -> bool:
+def ensure_stopwords_downloaded():
     """
-    检查样本中的停用词比例是否大于等于指定的最小值。
+    Ensure NLTK stopwords are downloaded only once.
+    """
+    nltk_data_path = os.path.expanduser('~') + '/nltk_data/corpora/stopwords'
+    if not os.path.exists(nltk_data_path):
+        nltk.download('stopwords', quiet=True)
+
+def load_stopwords():
+    """
+    Load the stopwords set, ensuring thread safety and one-time initialization.
+    """
+    global _stop_words
+    if _stop_words is None:
+        ensure_stopwords_downloaded()  # Ensure stopwords are downloaded
+        _stop_words = set(stopwords.words('english'))
+    return _stop_words
+
+def is_stopwords_ratio_valid(item, stop_words: set, min_ratio: float = 0.25) -> bool:
+    """
+    Check if the ratio of stopwords in the sample is greater than or equal to the specified minimum value.
 
     Args:
-        item (dict): 包含文本信息的字典。
-        min_ratio (float): 最小停用词比例，默认值为 0.25。
+        item (dict): A dictionary containing text information.
+        stop_words (set): A set of stopwords.
+        min_ratio (float): Minimum stopword ratio. Default is 0.25.
 
     Returns:
-        bool: 如果停用词比例大于等于 min_ratio，返回 True；否则返回 False。
+        bool: True if the stopword ratio is greater than or equal to min_ratio; otherwise, False.
     """
-    # 获取文本内容
+    # Concatenate conversation content
     user_conv = '\n\n'.join(
         ''.join(conversation) for conversation in item['conversations']
     ).replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
 
-    # 按空格分割文本为单词
+    # Split text into words
     words = user_conv.split()
 
-    # 计算停用词的数量
+    # Count the number of stopwords
     stopword_count = sum(1 for word in words if word.lower() in stop_words)
 
-    # 计算停用词比例
+    # Calculate the stopword ratio
     stopword_ratio = stopword_count / len(words) if len(words) > 0 else 0.0
 
-    # 判断是否符合比例要求
+    # Check if the ratio meets the requirement
     return stopword_ratio >= min_ratio
-
 
 @register()
 def stopwords_ratio_filter(
@@ -46,20 +61,24 @@ def stopwords_ratio_filter(
     min_ratio: Optional[float] = 0.25
 ) -> MMDataset:
     """
-    根据样本的停用词比例过滤数据集。
+    Filter the dataset based on the stopword ratio of the samples.
 
     Args:
-        dataset (MMDataset): 待过滤的数据集。
-        min_ratio (float): 最小停用词比例，默认值为 0.25。
+        dataset (MMDataset): The dataset to be filtered.
+        min_ratio (float): Minimum stopword ratio. Default is 0.25.
 
     Returns:
-        MMDataset: 过滤后的数据集。
+        MMDataset: The filtered dataset.
     """
-    print("正在过滤停用词比例不符合要求的样本...")
-    # 创建过滤函数
-    filter_func = partial(is_stopwords_ratio_valid, min_ratio=min_ratio)
+    print("Filtering samples that do not meet the stopword ratio requirement...")
     
-    # 调用 dataset.filter
+    # Load stopwords once
+    stop_words = load_stopwords()
+    
+    # Create the filter function
+    filter_func = partial(is_stopwords_ratio_valid, stop_words=stop_words, min_ratio=min_ratio)
+    
+    # Apply dataset.filter
     filtered_dataset = dataset.filter(
         func=filter_func, 
         max_workers=8, 
