@@ -2,7 +2,7 @@ from paddlemix.datacopilot.core import MMDataset
 from paddlemix.datacopilot.ops.filter._conversation_hash_filter import conversation_hash_filter
 
 # Path to the dataset
-anno_path = 'random_samples.json'
+anno_path = 'random_samples_1w.json'
 
 # Load the dataset
 print("Loading the dataset...")
@@ -13,7 +13,6 @@ print("Initial dataset size:", len(dataset))
 dataset = dataset.conversation_hash_filter(
     method="simhash",  # Use the 'simhash' method (default)
     threshold=0.8,  # Similarity threshold
-    max_workers=8  # Number of threads for parallel processing
 )
 
 # Print the size of the filtered dataset

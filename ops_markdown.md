@@ -4,6 +4,9 @@
 - [1. 转换算子](#1-转换算子)
 - [2. 过滤算子](#2-过滤算子)
   - [2.1 基础过滤算子](#21-基础过滤算子)
+    - [2.1.1 image_compliance_operator](#211-image_compliance_operator)
+    - [2.1.2 conversation_compliance_operator](#212-conversation_compliance_operator)
+- [3. 分析算子](#3-分析算子)
   - [2.2 文本过滤算子](#22-文本过滤算子)
   - [2.3 图像过滤算子](#23-图像过滤算子)
 - [3. 分析算子](#3-分析算子)
@@ -80,6 +83,11 @@ dataset = dataset.valid_data_filter()
 
 **功能介绍**:  
 过滤数据集中会话内容过长的条目。
+
+**功能详情**:
+将 conversations 中的所有内容拼接成一个字符串。
+去除 <image> 占位符及其换行符。
+检查拼接后的字符串长度是否小于 max_length。
 
 **参数说明**:
 - `max_length` (int, 默认值: 2048): 会话的最大字符长度
