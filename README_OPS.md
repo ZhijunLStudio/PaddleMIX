@@ -108,6 +108,8 @@ dataset = dataset.llava_convert(image_path_prefix='datasets/llava/valid_images/'
 }
 ```
 
+注：本文档其他所有的算子，都需要先转换格式方可使用。
+
 ---
 
 ## 2. 过滤算子
