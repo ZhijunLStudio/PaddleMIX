@@ -104,3 +104,5 @@ model_results/
 low_confidence_dino_images/
 test_qwen2_vl.json
 test_qwen2_vl_1w.json
+test_*.py
+*.png
