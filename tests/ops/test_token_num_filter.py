@@ -10,15 +10,15 @@ dataset = MMDataset.from_json(anno_path)
 print("Initial dataset size:", len(dataset))
 
 # Apply the token number filter operator
-filtered_dataset = dataset.token_num_filter(
+dataset = dataset.token_num_filter(
     tokenizer_model="Qwen/Qwen2.5-7B",  # Tokenizer model to use
     min_tokens=10,                      # Minimum token count
     max_tokens=512                      # Maximum token count
 )
 
 # Print the size of the filtered dataset
-print("Filtered dataset size:", len(filtered_dataset))
+print("Filtered dataset size:", len(dataset))
 print("Token number filtering complete.")
 
 # Export the filtered dataset
-filtered_dataset.export_json(anno_path.replace('.json', '_token_filtered.json'))
+dataset.export_json(anno_path.replace('.json', '_token_filtered.json'))

@@ -14,6 +14,6 @@ print("Initial dataset size:", len(dataset))
 dataset = dataset.llava_convert()
 
 
-print("Filtered dataset size:", len(dataset))
-print("Dataset validation complete.")
+print("Converted dataset size:", len(dataset))
+print("Dataset convert complete.")
 dataset.export_json(anno_path.replace('.json', '_convert.json'))

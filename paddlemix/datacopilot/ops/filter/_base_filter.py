@@ -12,8 +12,8 @@ def image_compliance_operator(item) -> bool:
     Returns:
         bool: Returns True if the image is valid, otherwise False.
     """
-    image_path = item['image']
     try:
+        image_path = item['image']
         with Image.open(image_path) as img:
             img.load()  # Force image data to load
         return True

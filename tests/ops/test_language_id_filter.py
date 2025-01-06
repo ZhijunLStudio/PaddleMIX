@@ -10,14 +10,14 @@ dataset = MMDataset.from_json(anno_path)
 print("Initial dataset size:", len(dataset))
 
 # Apply the language ID filter operator
-filtered_dataset = dataset.language_id_filter(
+dataset = dataset.language_id_filter(
     lang=["en", "fr"],  # Allow only English and French
     min_score=0.9       # Minimum confidence score
 )
 
 # Print the size of the filtered dataset
-print("Filtered dataset size:", len(filtered_dataset))
+print("Filtered dataset size:", len(dataset))
 print("Language ID filtering complete.")
 
 # Export the filtered dataset
-filtered_dataset.export_json(anno_path.replace('.json', '_lang_filtered.json'))
+dataset.export_json(anno_path.replace('.json', '_lang_filtered.json'))

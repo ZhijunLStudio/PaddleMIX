@@ -10,14 +10,14 @@ dataset = MMDataset.from_json(anno_path)
 print("Initial dataset size:", len(dataset))
 
 # Apply the text action filter operator
-filtered_dataset = dataset.text_action_filter(
+dataset = dataset.text_action_filter(
     lang="en",  # Language of the text
     min_action_num=2  # Minimum number of verbs
 )
 
 # Print the size of the filtered dataset
-print("Filtered dataset size:", len(filtered_dataset))
+print("Filtered dataset size:", len(dataset))
 print("Text action filtering complete.")
 
 # Export the filtered dataset
-filtered_dataset.export_json(anno_path.replace('.json', '_action_filtered.json'))
+dataset.export_json(anno_path.replace('.json', '_action_filtered.json'))

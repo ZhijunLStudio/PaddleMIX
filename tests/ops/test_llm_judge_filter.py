@@ -10,14 +10,14 @@ dataset = MMDataset.from_json(anno_path)
 print("Initial dataset size:", len(dataset))
 
 # Apply the llm response judgment operator
-filtered_dataset = dataset.llm_judge_filter(
+dataset = dataset.llm_judge_filter(
     model_name="Qwen/Qwen2.5-7B",  # llm model name
     batch_size=1                     # Batch size for processing
 )
 
 # Print the size of the filtered dataset
-print("Filtered dataset size:", len(filtered_dataset))
+print("Filtered dataset size:", len(dataset))
 print("llm response judgment complete.")
 
 # Export the filtered dataset
-filtered_dataset.export_json(anno_path.replace('.json', '_llm_judge_filtered.json'))
+dataset.export_json(anno_path.replace('.json', '_llm_judge_filtered.json'))

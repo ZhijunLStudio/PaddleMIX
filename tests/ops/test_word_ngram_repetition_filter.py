@@ -10,15 +10,15 @@ dataset = MMDataset.from_json(anno_path)
 print("Initial dataset size:", len(dataset))
 
 # Apply the word n-gram repetition filter
-filtered_dataset = dataset.word_ngram_repetition_filter(
+dataset = dataset.word_ngram_repetition_filter(
     rep_len=10,         # Length of the n-gram
     min_ratio=0.0,      # Minimum repetition ratio
     max_ratio=0.2       # Maximum repetition ratio
 )
 
 # Print the size of the filtered dataset
-print("Filtered dataset size:", len(filtered_dataset))
+print("Filtered dataset size:", len(dataset))
 print("Word n-gram repetition filtering complete.")
 
 # Export the filtered dataset
-filtered_dataset.export_json(anno_path.replace('.json', '_ngram_filtered.json'))
+dataset.export_json(anno_path.replace('.json', '_ngram_filtered.json'))

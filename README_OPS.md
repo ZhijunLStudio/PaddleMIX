@@ -249,7 +249,7 @@ dataset = dataset.conversation_percentage_filter(
 
 **使用示例**:
 ```python
-filtered_dataset = dataset.token_num_filter(
+dataset = dataset.token_num_filter(
     tokenizer_model="Qwen/Qwen2.5-7B",  
     min_tokens=10,                   
     max_tokens=512                      
@@ -341,7 +341,7 @@ dataset = dataset.special_characters_filter(
 
 **使用示例**:
 ```python
-filtered_dataset = dataset.language_id_filter(
+dataset = dataset.language_id_filter(
     lang=["en", "fr"],  
     min_score=0.9     
 )
@@ -366,7 +366,7 @@ filtered_dataset = dataset.language_id_filter(
 
 **使用示例**:
 ```python
-filtered_dataset = dataset.text_action_filter(
+dataset = dataset.text_action_filter(
     lang="en",  
     min_action_num=2  
 )
@@ -392,7 +392,7 @@ filtered_dataset = dataset.text_action_filter(
 
 **使用示例**:
 ```python
-filtered_dataset = dataset.text_entity_dependency_filter(
+dataset = dataset.text_entity_dependency_filter(
     lang="en",              
     min_dependency_num=2,   
     any_or_all="any"      
@@ -517,7 +517,7 @@ dataset = dataset.conversation_hash_filter(
 
 **使用示例**:
 ```python
-filtered_dataset = dataset.llm_judge_filter(
+dataset = dataset.llm_judge_filter(
     model_name="Qwen/Qwen2.5-7B",
     batch_size=1
 )

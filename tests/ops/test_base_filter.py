@@ -2,7 +2,7 @@ from paddlemix.datacopilot.core import MMDataset
 from paddlemix.datacopilot.ops.filter._base_filter import valid_data_filter
 
 # Path to the dataset
-anno_path = 'random_samples.json'
+anno_path = 'datasets/llava/00_llava_v1_5_mix665k_convert.json'
 
 # Load the dataset
 print("Loading the dataset...")

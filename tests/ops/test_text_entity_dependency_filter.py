@@ -10,15 +10,15 @@ dataset = MMDataset.from_json(anno_path)
 print("Initial dataset size:", len(dataset))
 
 # Apply the text entity dependency filter operator
-filtered_dataset = dataset.text_entity_dependency_filter(
+dataset = dataset.text_entity_dependency_filter(
     lang="en",               # Language of the text
     min_dependency_num=2,    # Minimum number of dependency edges per entity
     any_or_all="any"         # Filtering strategy: 'any' or 'all'
 )
 
 # Print the size of the filtered dataset
-print("Filtered dataset size:", len(filtered_dataset))
+print("Filtered dataset size:", len(dataset))
 print("Text entity dependency filtering complete.")
 
 # Export the filtered dataset
-filtered_dataset.export_json(anno_path.replace('.json', '_entity_dependency_filtered.json'))
+dataset.export_json(anno_path.replace('.json', '_entity_dependency_filtered.json'))
