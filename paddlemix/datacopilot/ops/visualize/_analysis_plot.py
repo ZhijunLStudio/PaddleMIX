@@ -310,28 +310,28 @@ def visualize_results(results: Dict[str, Any], output_dir: str, analysis_flags: 
     """
     try:
         # Data Statistics
-        if analysis_flags.get("data_statistics", False):
-            plot_data_statistics(results.get("data_statistics", {}), output_dir)
+        if analysis_flags.get("dataset_statistics", False):
+            plot_data_statistics(results.get("dataset_statistics", {}), output_dir)
 
         # Field Distribution
-        if analysis_flags.get("field_distribution", False):
-            plot_field_distribution(results.get("field_distribution", {}), output_dir)
+        if analysis_flags.get("language_distribution", False):
+            plot_field_distribution(results.get("language_distribution", {}), output_dir)
 
         # Path Validation
-        if analysis_flags.get("path_validation", False):
-            plot_image_path_distribution(results.get("path_validation", {}), output_dir)
+        if analysis_flags.get("image_path_analysis", False):
+            plot_image_path_distribution(results.get("image_path_analysis", {}), output_dir)
 
         # Anomaly Detection
-        if analysis_flags.get("anomaly_detection", False):
-            plot_anomaly_statistics(results.get("anomaly_detection", {}), output_dir)
+        if analysis_flags.get("data_anomalies", False):
+            plot_anomaly_statistics(results.get("data_anomalies", {}), output_dir)
 
         # Token Analysis for Human
-        if analysis_flags.get("token_analysis", False) and "human" in results.get("token_analysis", {}):
-            plot_token_distribution(results["token_analysis"]["human"], "human", output_dir)
+        if analysis_flags.get("conversation_tokens", False) and "human" in results.get("conversation_tokens", {}):
+            plot_token_distribution(results["conversation_tokens"]["human"], "human", output_dir)
 
         # Token Analysis for Assistant
-        if analysis_flags.get("token_analysis", False) and "assistant" in results.get("token_analysis", {}):
-            plot_token_distribution(results["token_analysis"]["assistant"], "assistant", output_dir)
+        if analysis_flags.get("conversation_tokens", False) and "assistant" in results.get("conversation_tokens", {}):
+            plot_token_distribution(results["conversation_tokens"]["assistant"], "assistant", output_dir)
 
     except Exception as e:
         print(f"Error in visualize_results: {e}")

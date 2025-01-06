@@ -5,12 +5,9 @@ import requests
 from paddlenlp.transformers import AutoTokenizer
 from paddlemix.datacopilot.core import MMDataset, register, ParallelMode
 from typing import Dict, Any
-from functools import partial
 import json
 
 from ..visualize._analysis_plot import visualize_results
-
-
 
 FASTTEXT_MODEL_PATH = "lid.176.bin"
 FASTTEXT_MODEL_URL = "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin"
@@ -27,22 +24,20 @@ def load_fasttext_model(model_path: str = FASTTEXT_MODEL_PATH, model_url: str = 
     Returns:
         fasttext.FastText._FastText: Loaded FastText model instance.
     """
-    # Check if the model already exists
     if not os.path.exists(model_path):
         print(f"FastText model file not found at {model_path}. Downloading...")
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
         try:
             response = requests.get(model_url, stream=True)
-            response.raise_for_status()  # Raise an error for HTTP issues
+            response.raise_for_status()
             with open(model_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
+                for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
             print(f"FastText model successfully downloaded to {model_path}.")
         except Exception as e:
             print(f"Failed to download FastText model. Error: {e}")
             raise
 
-    # Load the model
     try:
         print(f"Loading FastText model from {model_path}...")
         return fasttext.load_model(model_path)
@@ -64,7 +59,7 @@ def detect_language_with_fasttext(text: str, lang_model) -> str:
     """
     try:
         prediction = lang_model.predict(text.strip(), k=1)
-        return prediction[0][0].replace("__label__", "")  # Return the language code
+        return prediction[0][0].replace("__label__", "")
     except Exception:
         return "unknown"
 
@@ -81,9 +76,7 @@ def save_data_to_json(data: Any, filename: str):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-
-
-def compute_dataset_statistics(dataset: MMDataset) -> Dict[str, Any]:
+def analyze_dataset_statistics(dataset: MMDataset) -> Dict[str, Any]:
     """
     Analyze the dataset and compute basic statistics, including valid and invalid items.
 
@@ -93,42 +86,35 @@ def compute_dataset_statistics(dataset: MMDataset) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: A dictionary containing dataset statistics.
     """
-    # Initialize counters
     valid_items = []
     invalid_count = 0
 
-    # Validate items in the dataset
     for item in dataset.items:
-        # Check if the item has both "image" and valid "conversations"
         if "image" in item and isinstance(item.get("conversations"), list) and item["conversations"]:
             valid_items.append(item)
         else:
             invalid_count += 1
 
-    # Count statistics for valid items
     conversation_counts = [
         len(item.get("conversations", [])) for item in valid_items
     ]
-    total_conversations = sum(conversation_counts)  # Total number of Q&A pairs
-    max_conversations = max(conversation_counts, default=0)  # Maximum Q&A pairs in a conversation
-    min_conversations = min(conversation_counts, default=0)  # Minimum Q&A pairs in a conversation
-    avg_conversations = total_conversations / len(conversation_counts) if conversation_counts else 0  # Average Q&A pairs
+    total_conversations = sum(conversation_counts)
+    max_conversations = max(conversation_counts, default=0)
+    min_conversations = min(conversation_counts, default=0)
+    avg_conversations = total_conversations / len(conversation_counts) if conversation_counts else 0
 
-    # Count unique images
     unique_images = len(set(item.get("image", None) for item in valid_items if "image" in item))
 
-    # Return the statistics
     return {
-        "total_records": len(dataset),  # Total number of items in the dataset
-        "unique_images": unique_images,  # Number of unique images
-        "total_conversations": total_conversations,  # Total number of Q&A pairs
-        "max_conversations": max_conversations,  # Maximum Q&A pairs in a conversation
-        "min_conversations": min_conversations,  # Minimum Q&A pairs in a conversation
-        "avg_conversations": avg_conversations,  # Average Q&A pairs per conversation
-        "invalid_item_count": invalid_count,  # Number of invalid items
-        "valid_items": valid_items,  # List of valid items
+        "total_records": len(dataset),
+        "unique_images": unique_images,
+        "total_conversations": total_conversations,
+        "max_conversations": max_conversations,
+        "min_conversations": min_conversations,
+        "avg_conversations": avg_conversations,
+        "invalid_item_count": invalid_count,
+        "valid_items": valid_items,
     }
-
 
 
 def analyze_language_distribution(dataset: MMDataset, lang_model) -> Dict[str, Any]:
@@ -149,8 +135,6 @@ def analyze_language_distribution(dataset: MMDataset, lang_model) -> Dict[str, A
 
     def process_conversation(item):
         nonlocal mismatched_language_pairs
-        human_lang = assistant_lang = None
-
         for conv in item.get("conversations", []):
             if len(conv) < 2:
                 continue
@@ -186,7 +170,7 @@ def analyze_language_distribution(dataset: MMDataset, lang_model) -> Dict[str, A
     }
 
 
-def validate_image_paths_in_dataset(dataset: MMDataset) -> Dict[str, Any]:
+def analyze_image_paths(dataset: MMDataset) -> Dict[str, Any]:
     """
     Validate the distribution and existence of image paths in the dataset.
 
@@ -211,7 +195,7 @@ def validate_image_paths_in_dataset(dataset: MMDataset) -> Dict[str, Any]:
     }
 
 
-def detect_data_anomalies(dataset: MMDataset, output_dir: str) -> Dict[str, int]:
+def analyze_data_anomalies(dataset: MMDataset, output_dir: str) -> Dict[str, int]:
     """
     Detect anomalies in the dataset.
 
@@ -243,8 +227,6 @@ def detect_data_anomalies(dataset: MMDataset, output_dir: str) -> Dict[str, int]
     }
 
 
-
-
 def decode_token_ids(token_counts: Counter, tokenizer: AutoTokenizer) -> Counter:
     """
     Decode token IDs into their corresponding text and count their occurrences.
@@ -266,7 +248,7 @@ def decode_token_ids(token_counts: Counter, tokenizer: AutoTokenizer) -> Counter
     return decoded_counts
 
 
-def analyze_conversation_tokens(item: Dict[str, Any], tokenizer: AutoTokenizer) -> Dict[str, Any]:
+def analyze_single_conversation_tokens(item: Dict[str, Any], tokenizer: AutoTokenizer) -> Dict[str, Any]:
     """
     Analyze tokens in a single conversation.
 
@@ -282,10 +264,16 @@ def analyze_conversation_tokens(item: Dict[str, Any], tokenizer: AutoTokenizer) 
 
     for conv in item.get("conversations", []):
         try:
-            if len(conv) > 0:  # Human message
-                human_tokens.extend(tokenizer(conv[0], truncation=True, return_tensors="pd", use_fast=True)["input_ids"].numpy().flatten())
-            if len(conv) > 1:  # Assistant message
-                assistant_tokens.extend(tokenizer(conv[1], truncation=True, return_tensors="pd", use_fast=True)["input_ids"].numpy().flatten())
+            # Extract human message tokens
+            if len(conv) > 0:  # Ensure human message exists
+                human_tokens.extend(
+                    tokenizer(conv[0], truncation=True, return_tensors="pd", use_fast=True)["input_ids"].numpy().flatten()
+                )
+            # Extract assistant message tokens
+            if len(conv) > 1:  # Ensure assistant message exists
+                assistant_tokens.extend(
+                    tokenizer(conv[1], truncation=True, return_tensors="pd", use_fast=True)["input_ids"].numpy().flatten()
+                )
         except Exception as e:
             print(f"Error processing conversation: {conv}. Error: {e}")
 
@@ -301,7 +289,7 @@ def analyze_conversation_tokens(item: Dict[str, Any], tokenizer: AutoTokenizer) 
     }
 
 
-def run_token_analysis(dataset: MMDataset, tokenizer: AutoTokenizer) -> Dict[str, Any]:
+def analyze_conversation_tokens(dataset: MMDataset, tokenizer: AutoTokenizer) -> Dict[str, Any]:
     """
     Perform token-level analysis on the dataset, including token distribution and frequency.
 
@@ -314,33 +302,26 @@ def run_token_analysis(dataset: MMDataset, tokenizer: AutoTokenizer) -> Dict[str
     """
     print("Starting token analysis...")
 
-    # Initialize counters and variables
     human_token_distribution = Counter()
     assistant_token_distribution = Counter()
     total_human_tokens = 0
     total_assistant_tokens = 0
 
-    # Analyze tokens for all items in the dataset
     token_results = dataset.map(
-        func=lambda item: analyze_conversation_tokens(item, tokenizer),
+        func=lambda item: analyze_single_conversation_tokens(item, tokenizer),
         max_workers=16,
         progress=True
     )
 
-    # Aggregate results
     for result in token_results:
         total_human_tokens += result["human"]["total_tokens"]
         total_assistant_tokens += result["assistant"]["total_tokens"]
         human_token_distribution.update(result["human"]["token_distribution"])
         assistant_token_distribution.update(result["assistant"]["token_distribution"])
 
-
-
-    # Identify high- and low-frequency tokens
     num_common_tokens = 20
     human_high_freq_tokens = human_token_distribution.most_common(num_common_tokens)
     assistant_high_freq_tokens = assistant_token_distribution.most_common(num_common_tokens)
-
     human_low_freq_tokens = human_token_distribution.most_common()[-num_common_tokens:]
     assistant_low_freq_tokens = assistant_token_distribution.most_common()[-num_common_tokens:]
 
@@ -356,11 +337,10 @@ def run_token_analysis(dataset: MMDataset, tokenizer: AutoTokenizer) -> Dict[str
             "low_freq_tokens": decode_token_ids(Counter(dict(assistant_low_freq_tokens)), tokenizer),
         }
     }
-    
-    
+
 
 @register()
-def run_analysis_pipeline(dataset: MMDataset, analysis_flags: Dict[str, bool] = None, output_dir: str = "output_directory") -> Dict[str, Any]:
+def base_analysis_pipeline(dataset: MMDataset, analysis_flags: Dict[str, bool] = None, output_dir: str = "output_directory") -> Dict[str, Any]:
     """
     Execute a pipeline of analysis functions on the dataset.
 
@@ -374,16 +354,15 @@ def run_analysis_pipeline(dataset: MMDataset, analysis_flags: Dict[str, bool] = 
     """
     print("Initializing FastText model and Tokenizer...")
     lang_model = load_fasttext_model()
-
     tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
 
     if analysis_flags is None:
         analysis_flags = {
-            "data_statistics": True,
-            "field_distribution": True,
-            "path_validation": True,
-            "anomaly_detection": True,
-            "token_analysis": True
+            "dataset_statistics": True,
+            "language_distribution": True,
+            "image_path_analysis": True,
+            "data_anomalies": True,
+            "conversation_tokens": True
         }
 
     results = {}
@@ -391,25 +370,27 @@ def run_analysis_pipeline(dataset: MMDataset, analysis_flags: Dict[str, bool] = 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    if analysis_flags.get("data_statistics", False):
+    print("analysis_flags:", analysis_flags)
+
+    if analysis_flags.get("dataset_statistics", False):
         print("Running dataset statistics analysis...")
-        results["data_statistics"] = compute_dataset_statistics(dataset)
+        results["dataset_statistics"] = analyze_dataset_statistics(dataset)
 
-    if analysis_flags.get("field_distribution", False):
+    if analysis_flags.get("language_distribution", False):
         print("Running language distribution analysis...")
-        results["field_distribution"] = analyze_language_distribution(dataset, lang_model)
+        results["language_distribution"] = analyze_language_distribution(dataset, lang_model)
 
-    if analysis_flags.get("path_validation", False):
+    if analysis_flags.get("image_path_analysis", False):
         print("Running image path validation...")
-        results["path_validation"] = validate_image_paths_in_dataset(dataset)
+        results["image_path_analysis"] = analyze_image_paths(dataset)
 
-    if analysis_flags.get("anomaly_detection", False):
+    if analysis_flags.get("data_anomalies", False):
         print("Running anomaly detection...")
-        results["anomaly_detection"] = detect_data_anomalies(dataset, output_dir)
+        results["data_anomalies"] = analyze_data_anomalies(dataset, output_dir)
 
-    if analysis_flags.get("token_analysis", False):
+    if analysis_flags.get("conversation_tokens", False):
         print("Running token analysis...")
-        results["token_analysis"] = run_token_analysis(dataset, tokenizer)
+        results["conversation_tokens"] = analyze_conversation_tokens(dataset, tokenizer)
 
     print("All analyses completed. Visualizing results...")
     visualize_results(results, output_dir, analysis_flags)
