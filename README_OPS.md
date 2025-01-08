@@ -845,7 +845,7 @@ dataset = dataset.description_analysis(model_name= "Qwen/Qwen2.5-7B", batch_size
 **输入输出**:
 - 输入:
   - dataset (MMDataset): 包含图像路径和对话内容的多模态数据集。
-  - model_name (str): 使用的预训练语言模型名称（默认值: "Qwen/Qwen2.5-7B"）。
+  - model_name (str): 使用的预训练语言模型名称（默认值: "Qwen/Qwen2-VL-7B-Instruct"）。
   - quality_analysis_flags (Dict[str, bool], 可选): 用于控制评估维度的标志字典。
 
 - 输出: Dict[str, Any]: 包含每张图像的评估结果。
@@ -859,7 +859,7 @@ quality_analysis_flags = {
     "semantic_understanding": False,
 }
 dataset_results = dataset.quality_analysis(
-    model_name="Qwen/Qwen2.5-7B", 
+    model_name="Qwen/Qwen2-VL-7B-Instruct", 
     quality_analysis_flags=quality_analysis_flags  
 )
 ```

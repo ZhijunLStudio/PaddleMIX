@@ -12,14 +12,14 @@ print("Initial dataset size:", len(dataset))
 # Analysis flags to specify which analyses to run
 quality_analysis_flags = {
     "image_text_matching": True,
-    "object_detail_fulfillment": False,
-    "caption_text_quality": False,
-    "semantic_understanding": False,
+    "object_detail_fulfillment": True,
+    "caption_text_quality": True,
+    "semantic_understanding": True,
 }
 
 # Apply the image caption metrics analysis operator
 dataset_results = dataset.quality_analysis(
-    model_name="Qwen/Qwen2.5-7B",  # Specify the model name
+    model_name="Qwen/Qwen2-VL-7B-Instruct",  # Specify the model name
     quality_analysis_flags=quality_analysis_flags  # Pass the analysis flags
 )
 

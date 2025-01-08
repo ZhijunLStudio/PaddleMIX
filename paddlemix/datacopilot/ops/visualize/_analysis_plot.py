@@ -173,13 +173,16 @@ def plot_image_path_distribution(validation_result: Dict[str, Any], output_dir: 
     ax1 = fig.add_subplot(121)
     if paths:
         ax1.bar(paths, path_counts, color='lightblue')
-        ax1.set_title("Image Path Distribution")
-        ax1.set_xlabel("Image Path")
-        ax1.set_ylabel("Image Count")
-        ax1.tick_params(axis='x', rotation=90)
+        ax1.set_title("Image Path Distribution", fontsize=14)
+        ax1.set_xlabel("Image Path", fontsize=12)
+        ax1.set_ylabel("Image Count", fontsize=12)
+        ax1.tick_params(axis='x', labelsize=10)
+        ax1.tick_params(axis='y', labelsize=10)
+        plt.sca(ax1)  # Set current axis to ax1 for xticks adjustment
+        plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels and align to the right
     else:
-        ax1.text(0.5, 0.5, "No Path Data", fontsize=12, ha='center', va='center')
-        ax1.set_title("Image Path Distribution")
+        ax1.text(0.5, 0.5, "No Path Data", fontsize=14, ha='center', va='center')
+        ax1.set_title("Image Path Distribution", fontsize=14)
         ax1.axis('off')
 
     # Right: Add statistical information
@@ -199,41 +202,79 @@ def plot_image_path_distribution(validation_result: Dict[str, Any], output_dir: 
     # Adjust layout and save the plot
     plt.tight_layout()
     os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(f"{output_dir}/02_image_path_distribution.png")
+    output_path = os.path.join(output_dir, "02_image_path_distribution.png")
+    plt.savefig(output_path)
     plt.close()
+
+    print(f"Image path distribution plot saved at: {output_path}")
+
 
 
 
 def plot_anomaly_statistics(anomaly_results: Dict[str, Any], output_dir: str):
     """
-    Plot anomaly statistics, including missing fields and empty conversations.
+    Plot anomaly statistics, including missing fields, empty conversations, and invalid items.
 
     Args:
         anomaly_results (dict): A dictionary containing anomaly statistics.
         output_dir (str): Directory to save the generated plot.
     """
     try:
+        # 从 anomaly_results 获取各类异常的计数
         missing_field_count = anomaly_results.get('missing_field_count', 0)
         empty_conversation_count = anomaly_results.get('empty_conversation_count', 0)
+        invalid_item_count = anomaly_results.get('invalid_item_count', 0)
 
-        # Create a bar chart for anomaly statistics
-        labels = ['Missing Fields', 'Empty Conversations']
-        counts = [missing_field_count, empty_conversation_count]
+        # 定义标签和对应的计数
+        labels = ['Missing Fields', 'Empty Conversations', 'Invalid Items']
+        counts = [missing_field_count, empty_conversation_count, invalid_item_count]
 
-        plt.figure(figsize=(8, 5))
-        plt.bar(labels, counts, color=['lightcoral', 'lightblue'])
-        plt.title("Anomaly Statistics")
-        plt.xlabel("Anomaly Type")
-        plt.ylabel("Count")
+        # 创建画布，分为左右两部分
+        fig = plt.figure(figsize=(15, 8))
 
-        # Save the plot
+        # 左边：柱状图
+        ax1 = fig.add_subplot(121)
+        if any(counts):  # 如果有任何异常数据
+            ax1.bar(labels, counts, color=['lightgreen', 'lightblue', 'lightcoral'])
+            ax1.set_title("Anomaly Statistics", fontsize=16)
+            ax1.set_xlabel("Anomaly Type", fontsize=12)
+            ax1.set_ylabel("Count", fontsize=12)
+            ax1.tick_params(axis='x', rotation=30, labelsize=10)
+            ax1.tick_params(axis='y', labelsize=10)
+        else:  # 如果没有异常数据
+            ax1.text(0.5, 0.5, "No Anomalies Detected", fontsize=14, ha='center', va='center')
+            ax1.set_title("Anomaly Statistics", fontsize=16)
+            ax1.axis('off')
+
+        # 右边：关键统计信息文本
+        ax2 = fig.add_subplot(122, facecolor='white')
+        ax2.axis('off')
+
+        # 准备统计信息文本
+        stats_text = [
+            f"Missing Fields: {missing_field_count}",
+            f"Empty Conversations: {empty_conversation_count}",
+            f"Invalid Items: {invalid_item_count}",
+            f"Total Anomalies: {sum(counts)}",
+        ]
+
+        # 将统计信息绘制在右侧画布上
+        for i, text in enumerate(stats_text):
+            ax2.text(0.1, 0.9 - i * 0.1, text, fontsize=12, ha='left', va='center', color='black')
+
+        # 保存图像
         plt.tight_layout()
         os.makedirs(output_dir, exist_ok=True)
-        plt.savefig(f"{output_dir}/03_anomaly_statistics.png")
+        output_path = os.path.join(output_dir, "03_anomaly_statistics.png")
+        plt.savefig(output_path)
         plt.close()
+
+        print(f"Anomaly statistics plot saved at: {output_path}")
 
     except Exception as e:
         print(f"Error in plot_anomaly_statistics: {e}")
+
+
 
 
 def plot_token_distribution(token_analysis: Dict[str, Any], role: str, output_dir: str):

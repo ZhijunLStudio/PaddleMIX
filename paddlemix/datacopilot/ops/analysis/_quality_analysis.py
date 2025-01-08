@@ -1,7 +1,10 @@
-from paddlenlp.transformers import AutoTokenizer, AutoModelForCausalLM
-from paddlemix.datacopilot.core import MMDataset, register
+import paddle
+from paddlenlp.transformers import Qwen2Tokenizer
+from paddlemix.models.qwen2_vl.modeling_qwen2_vl import Qwen2VLForConditionalGeneration
+from paddlemix.processors.qwen2_vl_processing import Qwen2VLImageProcessor, Qwen2VLProcessor, process_vision_info
 from tqdm import tqdm
-from typing import Dict, List
+from typing import Dict
+from paddlemix.datacopilot.core import MMDataset, register
 
 # Predefined evaluation metrics and corresponding prompt templates
 CRITERIA_PROMPTS = {
@@ -14,17 +17,46 @@ CRITERIA_PROMPTS = {
 DEFAULT_PROMPT_TEMPLATE = """Text Caption: {caption}
 
 {criteria}
-A higher score indicates a higher level of {aspect}. Ensure that your scoring is nuanced and uses the entire range from 0 to 100, reflecting the subtle differences. The score should be given as an integer, with each number between 0 and 100 considered as a potential score, avoiding the tendency to round to multiples of 10. Please first output a single line containing the value indicating the scores. In the subsequent line, please provide a comprehensive explanation of your evaluation, avoiding any potential bias."""
+A higher score indicates a higher level of {aspect}. Ensure that your scoring is nuanced and uses the entire range from 0 to 100, reflecting the subtle differences. The score should be given as an integer, with each number between 0 and 100 considered as a potential score, avoiding the tendency to round to multiples of 10. Please first output a single line containing the value indicating the score. In the subsequent line, please provide a comprehensive explanation of your evaluation, avoiding any potential bias."""
 
-# Load the model and tokenizer
+# Load the Qwen2-VL-7B-Instruct model and processor
 def load_model(model_name: str):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name, dtype="float16")
-    return tokenizer, model
+    model = Qwen2VLForConditionalGeneration.from_pretrained(model_name, dtype="bfloat16")
+    tokenizer = Qwen2Tokenizer.from_pretrained(model_name)
+    image_processor = Qwen2VLImageProcessor()
+    processor = Qwen2VLProcessor(image_processor, tokenizer)
+    return model, processor
+
+def parse_model_output(output: str) -> int:
+    """
+    Parse the model's output to extract the score.
+
+    Args:
+        output (str): The raw output from the model.
+
+    Returns:
+        int: The extracted score (integer between 0 and 100).
+    """
+    lines = output.strip().split('\n')
+    for line in lines:
+        # Try to find the first line that contains a valid integer score
+        try:
+            # Remove any potential leading/trailing whitespace
+            score_str = line.strip()
+            # Attempt to convert to integer
+            score = int(score_str)
+            # Check if the score is within the valid range
+            if 0 <= score <= 100:
+                return score
+        except ValueError:
+            # Not a valid integer, move to the next line
+            continue
+    # If no valid score is found, return a default value or raise an error
+    return -1  # -1 indicates an invalid or missing score
 
 def evaluate_image_caption(
-    dataset: MMDataset, 
-    model_name: str = "Qwen/Qwen2.5-7B", 
+    dataset: MMDataset,
+    model_name: str = "Qwen/Qwen2-VL-7B-Instruct",
     analysis_flags: Dict[str, bool] = None
 ) -> Dict:
     """
@@ -38,8 +70,8 @@ def evaluate_image_caption(
     Returns:
         Dict: Evaluation results for each dataset item.
     """
-    # Load the model
-    tokenizer, model = load_model(model_name)
+    # Load the model and processor
+    model, processor = load_model(model_name)
 
     # Final results storage
     results = {}
@@ -50,71 +82,100 @@ def evaluate_image_caption(
     else:
         selected_metrics = [key for key, value in analysis_flags.items() if value]
 
-    # Process in batches, each batch handles a set of data
-    batch_size = 1
-    batch_data = []
-
+    # Process each item in the dataset
     for item in tqdm(dataset):
         item_id = item["image"]  # Use image path as item_id
         conversations = item["conversations"]
-        
+        print(item_id)
+
         # Combine all Q&A pairs into a single conversation
         full_caption = ""
         for conversation in conversations:
             question, answer = conversation
-            question = question.replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
+            # Combine question and answer into the caption
             full_caption += f"Question: {question}\nAnswer: {answer}\n"
+
+        # Prepare image input
+        image_inputs, video_inputs = process_vision_info([
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "image": item_id,
+                    },
+                    {"type": "text", "text": "Describe this image."},
+                ],
+            }
+        ])
 
         # Evaluate each selected metric
         for metric in selected_metrics:
             criteria = CRITERIA_PROMPTS[metric]
             aspect = metric.replace("_", " ")
             caption = full_caption
+            print(f"metric:{metric}, caption:{caption}")
 
             # Generate the full prompt
             full_prompt = DEFAULT_PROMPT_TEMPLATE.format(
-                caption=caption, 
-                criteria=criteria, 
+                caption=caption,
+                criteria=criteria,
                 aspect=aspect
             )
-            
-            # Store the generated prompt in the current batch
-            batch_data.append(full_prompt)
 
-            # Perform inference when batch size is reached
-            if len(batch_data) == batch_size:
-                # Tokenize input
-                input_features = tokenizer(batch_data, return_tensors="pd", padding=True)
+            # Combine instruction and question
+            image_pad_token = "<|vision_start|><|image_pad|><|vision_end|>"
+            text = f"<|im_start|>system\n{full_prompt}<|im_end|>\n<|im_start|>user\n{image_pad_token}<|im_end|>\n<|im_start|>assistant\n"
 
-                # Model inference
-                outputs = model.generate(**input_features, max_length=256)
+            # Tokenize and process inputs
+            inputs = processor(
+                text=[text],
+                images=image_inputs,
+                videos=video_inputs,
+                padding=True,
+                return_tensors="pd",
+            )
 
-                # Decode the output
-                decoded_outputs = tokenizer.batch_decode(outputs[0], skip_special_tokens=True)
+            # Generate output
+            with paddle.no_grad():
+                outputs = model.generate(**inputs, max_new_tokens=512)
+                decoded_output = processor.batch_decode(
+                    outputs[0],
+                    skip_special_tokens=True,
+                    clean_up_tokenization_spaces=False
+                )
+                # Extract the score from the model's output
+                score = parse_model_output(decoded_output[0])
+                print(decoded_output[0])
+                print("*"*50)
 
-                # Store results
-                for idx, decoded_output in enumerate(decoded_outputs):
-                    if item_id not in results:
-                        results[item_id] = {}
-                    results[item_id][metric] = decoded_output
-
-                # Clear the current batch
-                batch_data = []
+            # Store results (only the score)
+            if item_id not in results:
+                results[item_id] = {}
+            results[item_id][metric] = score
 
     return results
 
 @register()
-def quality_analysis(dataset: MMDataset, model_name: str, quality_analysis_flags: Dict[str, bool] = None):
+def quality_analysis(
+    dataset: MMDataset,
+    model_name: str,
+    quality_analysis_flags: Dict[str, bool] = None
+):
     """
     Analyze the quality of multi-turn conversations for image captioning.
 
     Args:
         dataset (MMDataset): The dataset containing image paths and conversations.
         model_name (str): Name of the model to use.
-        analysis_flags (Dict[str, bool]): Flags to control which metrics to evaluate.
+        quality_analysis_flags (Dict[str, bool]): Flags to control which metrics to evaluate.
 
     Returns:
         Dict: Evaluation results for each dataset item.
     """
-    results = evaluate_image_caption(dataset, model_name, quality_analysis_flags)
+    results = evaluate_image_caption(
+        dataset,
+        model_name,
+        quality_analysis_flags
+    )
     return results

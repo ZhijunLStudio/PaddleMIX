@@ -2,7 +2,7 @@ from paddlemix.datacopilot.core import MMDataset
 from paddlemix.datacopilot.ops.analysis._base_analysis import base_analysis_pipeline
 
 # Path to the dataset
-anno_path = 'random_samples.json'
+anno_path = 'datasets/llava/02_val_chatml_filter.json'
 
 # Load the dataset
 print("Loading the dataset...")
@@ -11,11 +11,11 @@ print("Initial dataset size:", len(dataset))
 
 # Analysis flags to specify which analyses to run
 analysis_flags = {
-    "dataset_statistics": True,
-    "language_distribution": True,
+    "dataset_statistics": False,
+    "language_distribution": False,
     "image_path_analysis": True,
-    "data_anomalies": True,
-    "conversation_tokens": True
+    "data_anomalies": False,
+    "conversation_tokens": False
 }
 
 # Run the base analysis

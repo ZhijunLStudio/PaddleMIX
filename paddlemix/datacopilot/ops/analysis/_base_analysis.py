@@ -195,6 +195,7 @@ def analyze_image_paths(dataset: MMDataset) -> Dict[str, Any]:
     }
 
 
+
 def analyze_data_anomalies(dataset: MMDataset, output_dir: str) -> Dict[str, int]:
     """
     Detect anomalies in the dataset.
@@ -207,24 +208,49 @@ def analyze_data_anomalies(dataset: MMDataset, output_dir: str) -> Dict[str, int
         Dict[str, int]: Counts of detected anomalies.
     """
     def identify_anomalies(item):
+        # 初始化异常信息
         anomalies = {}
-        if not all(key in item for key in ["image", "conversations"]):
-            anomalies["missing_fields"] = True
-        if "conversations" in item and (not item["conversations"] or any(not conv[0].strip() for conv in item["conversations"])):
-            anomalies["empty_conversations"] = True
+
+        # 检查 item 是否为有效数据
+        if not isinstance(item, dict):  # 确保 item 是一个字典
+            anomalies["invalid_item"] = True
+            return anomalies
+
+        # 检查是否缺少必须字段
+        required_fields = ["image", "conversations"]
+        missing_fields = [field for field in required_fields if field not in item]
+        if missing_fields:
+            anomalies["missing_fields"] = missing_fields
+
+        # 检查 conversations 是否为空或无效
+        if "conversations" in item:
+            if not item["conversations"]:  # conversations 为空
+                anomalies["empty_conversations"] = True
+            elif any(not conv[0].strip() for conv in item["conversations"]):  # conversations 内容无效
+                anomalies["invalid_conversation_content"] = True
+
         return anomalies
 
+    # 执行并行映射以分析数据集中的异常
     anomaly_results = dataset.map(identify_anomalies, max_workers=8, mode=ParallelMode.THREAD)
+
+    # 分类异常
     missing_fields = [item for item, result in zip(dataset, anomaly_results) if result.get("missing_fields")]
     empty_conversations = [item for item, result in zip(dataset, anomaly_results) if result.get("empty_conversations")]
+    invalid_items = [item for item, result in zip(dataset, anomaly_results) if result.get("invalid_item")]
 
+    # 保存异常到 JSON 文件
     save_data_to_json(missing_fields, os.path.join(output_dir, "missing_fields.json"))
     save_data_to_json(empty_conversations, os.path.join(output_dir, "empty_conversations.json"))
+    save_data_to_json(invalid_items, os.path.join(output_dir, "invalid_items.json"))
 
+    # 返回异常统计
     return {
         "missing_field_count": len(missing_fields),
         "empty_conversation_count": len(empty_conversations),
+        "invalid_item_count": len(invalid_items),
     }
+
 
 
 def decode_token_ids(token_counts: Counter, tokenizer: AutoTokenizer) -> Counter:
