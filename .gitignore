@@ -106,7 +106,7 @@ test_qwen2_vl_1w.json
 test_*.py
 *.png
 lzj-data.md
-PaddleNLP/*
+PaddleNLP
 paddlemix.egg-info
 .deepeval_telemtry.txt
 my_test
