@@ -19,10 +19,8 @@ from dataclasses import dataclass, field
 @dataclass
 class CLAPConfig:
     embed_dim: int = 1024
-    # audio_cfg: CLAPAudioCfg = CLAPAudioCfg()
-    # text_cfg: CLAPTextCfg = CLAPTextCfg()
-    audio_cfg: CLAPAudioCfg = field(default_factory=CLAPAudioCfg)
-    text_cfg: CLAPTextCfg = field(default_factory=CLAPTextCfg)
+    audio_cfg: CLAPAudioCfg = field(default_factory=CLAPAudioCfg())
+    text_cfg: CLAPTextCfg = field(default_factory=CLAPTextCfg())
 
 def create_clap_model(
     amodel_name: str,
