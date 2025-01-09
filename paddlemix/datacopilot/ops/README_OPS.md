@@ -72,7 +72,7 @@ dataset = MMDataset.from_json(anno_path)
 dataset = dataset.llava_convert()
 dataset = dataset.llava_convert(
   image_path_prefix='datasets/llava/valid_images/'
-  )
+)
 ```
 
 **输入输出**:
@@ -174,7 +174,7 @@ dataset = dataset.valid_data_filter()
 ```python
 dataset = dataset.conversation_length_filter(
   max_length=2048
-  )
+)
 ```
 
 ---
@@ -450,7 +450,7 @@ dataset = dataset.char_ngram_repetition_filter(
 
 **使用示例**:
 ```python
-dataset = dataset.char_ngram_repetition_filter(
+dataset = dataset.word_ngram_repetition_filter(
     rep_len=10, 
     min_ratio=0.1, 
     max_ratio=0.4
@@ -608,7 +608,9 @@ dataset = dataset.image_resolution_filter(
 
 **使用示例**:
 ```python
-dataset = dataset.image_hash_filter(hash_method="phash")
+dataset = dataset.image_hash_filter(
+  hash_method="phash"
+)
 ```
 
 ---
