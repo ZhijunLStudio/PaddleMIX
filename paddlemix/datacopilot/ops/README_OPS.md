@@ -70,7 +70,9 @@
 ```python
 dataset = MMDataset.from_json(anno_path)
 dataset = dataset.llava_convert()
-dataset = dataset.llava_convert(image_path_prefix='datasets/llava/valid_images/')
+dataset = dataset.llava_convert(
+  image_path_prefix='datasets/llava/valid_images/'
+  )
 ```
 
 **输入输出**:
@@ -170,7 +172,9 @@ dataset = dataset.valid_data_filter()
 
 **使用示例**:
 ```python
-dataset = dataset.conversation_length_filter(max_length=2048)
+dataset = dataset.conversation_length_filter(
+  max_length=2048
+  )
 ```
 
 ---

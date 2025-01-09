@@ -106,3 +106,4 @@ test_qwen2_vl.json
 test_qwen2_vl_1w.json
 test_*.py
 *.png
+lzj-data.md
