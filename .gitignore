@@ -97,7 +97,6 @@ valid_images.7z.filepart
 datasets/
 valid_images.7z
 checkpoints/
-magpie/
 cache/
 low_confidence_images/
 model_results/
@@ -107,6 +106,8 @@ test_qwen2_vl_1w.json
 test_*.py
 *.png
 lzj-data.md
-PaddleNLP
+PaddleNLP/*
 paddlemix.egg-info
 .deepeval_telemtry.txt
+my_test
+command.txt
