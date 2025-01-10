@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import paddle
-import paddle.nn.functional as F
 
 """ CLIP Model
 
