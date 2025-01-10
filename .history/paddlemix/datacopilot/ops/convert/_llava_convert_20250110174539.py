@@ -10,6 +10,7 @@ def convert_llava_item(item: Dict, image_path_prefix: str = '') -> Dict:
     Args:
         item (dict): Original data item containing 'image' and 'conversations' keys.
         image_path_prefix (str): Prefix for the image path. Defaults to an empty string. 
+                                 If not provided, the default value 'datasets/llava/valid_images/' will be used.
     
     Returns:
         dict: Transformed data item containing 'image' and 'conversations' keys.

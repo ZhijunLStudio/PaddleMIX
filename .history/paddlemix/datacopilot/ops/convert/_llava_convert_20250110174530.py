@@ -10,6 +10,7 @@ def convert_llava_item(item: Dict, image_path_prefix: str = '') -> Dict:
     Args:
         item (dict): Original data item containing 'image' and 'conversations' keys.
         image_path_prefix (str): Prefix for the image path. Defaults to an empty string. 
+                                 If not provided, the default value 'datasets/llava/valid_images/' will be used.
     
     Returns:
         dict: Transformed data item containing 'image' and 'conversations' keys.
@@ -44,7 +45,7 @@ def convert_llava_item(item: Dict, image_path_prefix: str = '') -> Dict:
 def llava_convert(dataset: MMDataset, image_path_prefix='') -> MMDataset:
 
     print('Converting llava dataset...')
-    # Use the map operator for batch transformation
+    # Use the map operator for batch transformation, passing 'datasets/llava/valid_images/' as the default path
     filter_func = partial(convert_llava_item, image_path_prefix=image_path_prefix)
 
     # Apply dataset.map
