@@ -950,5 +950,8 @@ results = lda_topic_clustering(
 
 **使用示例**:
 ```python
-dataset = generate_qna_for_images(image_folder_path="paddlemix/demo_images", model_name="Qwen/Qwen2-VL-7B-Instruct")
+dataset = generate_qna_for_images(
+  image_folder_path="paddlemix/demo_images", 
+  model_name="Qwen/Qwen2-VL-7B-Instruct"
+)
 ```
