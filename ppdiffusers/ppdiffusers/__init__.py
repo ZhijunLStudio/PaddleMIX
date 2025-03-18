@@ -152,6 +152,8 @@ else:
             "SD3ControlNetModel",
             "SD3MultiControlNetModel",
             # new add
+            "FluxControlNetModel",
+            # new add
             "VCtrlModel",
         ]
     )
@@ -524,6 +526,7 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             SD3ControlNetModel,
             SD3MultiControlNetModel,
             SD3Transformer2DModel,
+            FluxControlNetModel,
             STUNetModel,
             T2IAdapter,
             T5FilmDecoder,
