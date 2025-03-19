@@ -13,7 +13,7 @@
 # limitations under the License.
 import math
 import warnings
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, List
 
 import numpy as np
 import paddle
@@ -1260,3 +1260,39 @@ def get_1d_rotary_pos_embed(
             paddle.ones_like(x=freqs) * paddle.sin(freqs),
         )  # complex64     # [S, D/2]
         return freqs_cis
+
+
+
+
+class FluxPosEmbed(nn.Layer):
+    """
+    PaddlePaddle 版本的 FluxPosEmbed
+    """
+    def __init__(self, theta: int, axes_dim: List[int]):
+        super().__init__()
+        self.theta = theta
+        self.axes_dim = axes_dim
+
+    def forward(self, ids: paddle.Tensor) -> paddle.Tensor:
+        n_axes = ids.shape[-1]
+        cos_out = []
+        sin_out = []
+        pos = ids.astype(paddle.float32)
+        is_mps = paddle.device.get_device().startswith("mps")
+        freqs_dtype = paddle.float32 if is_mps else paddle.float64
+
+        for i in range(n_axes):
+            cos, sin = get_1d_rotary_pos_embed(
+                self.axes_dim[i],
+                pos[:, i],
+                theta=self.theta,
+                repeat_interleave_real=True,
+                use_real=True,
+                freqs_dtype=freqs_dtype,
+            )
+            cos_out.append(cos)
+            sin_out.append(sin)
+
+        freqs_cos = paddle.concat(cos_out, axis=-1).astype(ids.dtype)
+        freqs_sin = paddle.concat(sin_out, axis=-1).astype(ids.dtype)
+        return freqs_cos, freqs_sin
