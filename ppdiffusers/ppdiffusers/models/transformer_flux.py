@@ -14,18 +14,19 @@
 
 from typing import Any, Dict, Optional, Tuple, Union
 
-import numpy as np
+
 import paddle
 import paddle.nn as nn
+from paddle.distributed.fleet.utils import recompute
 
-from ...configuration_utils import ConfigMixin, register_to_config
-from ...models.attention import FeedForward
-from ...models.attention_processor import Attention, AttentionProcessor
-from ...models.modeling_utils import ModelMixin
-from ...models.normalization import AdaLayerNormContinuous, AdaLayerNormZero, AdaLayerNormZeroSingle
-from ...utils import USE_PEFT_BACKEND, logging, scale_lora_layers, unscale_lora_layers
-from ..embeddings import CombinedTimestepGuidanceTextProjEmbeddings, CombinedTimestepTextProjEmbeddings, FluxPosEmbed
-from ..modeling_outputs import Transformer2DModelOutput
+from ..configuration_utils import ConfigMixin, register_to_config
+from ..models.attention import FeedForward
+from ..models.attention_processor import Attention, AttentionProcessor, FluxAttnProcessor2_0
+from ..models.modeling_utils import ModelMixin
+from ..models.normalization import AdaLayerNormContinuous, AdaLayerNormZero, AdaLayerNormZeroSingle
+from ..utils import USE_PEFT_BACKEND, logging, scale_lora_layers, unscale_lora_layers, use_old_recompute
+from .embeddings import CombinedTimestepGuidanceTextProjEmbeddings, CombinedTimestepTextProjEmbeddings, FluxPosEmbed
+from .modeling_outputs import Transformer2DModelOutput
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -49,7 +50,7 @@ class FluxSingleTransformerBlock(nn.Layer):
             heads=num_attention_heads,
             out_dim=dim,
             bias=True,
-            processor=AttentionProcessor(),  # 使用基础处理器
+            processor=FluxAttnProcessor2_0(),  # 使用基础处理器
             qk_norm="rms_norm",
             eps=1e-6,
             pre_only=True,
@@ -70,7 +71,7 @@ class FluxSingleTransformerBlock(nn.Layer):
         
         attn_output = self.attn(
             hidden_states=norm_hidden_states,
-            encoder_hidden_states=None,
+            image_rotary_emb=image_rotary_emb,
             **joint_attention_kwargs,
         )
 
@@ -102,7 +103,7 @@ class FluxTransformerBlock(nn.Layer):
             out_dim=dim,
             context_pre_only=False,
             bias=True,
-            processor=AttentionProcessor(),  # 使用基础处理器
+            processor=FluxAttnProcessor2_0(),  # 使用基础处理器
             qk_norm=qk_norm,
             eps=eps,
         )
@@ -129,26 +130,39 @@ class FluxTransformerBlock(nn.Layer):
         attention_outputs = self.attn(
             hidden_states=norm_hidden_states,
             encoder_hidden_states=norm_encoder_hidden_states,
+            image_rotary_emb=image_rotary_emb,
             **joint_attention_kwargs,
         )
 
         # 处理Attention输出
-        attn_output, context_attn_output = attention_outputs[:2]
+        if len(attention_outputs) == 2:
+            attn_output, context_attn_output = attention_outputs
+        elif len(attention_outputs) == 3:
+            attn_output, context_attn_output, ip_attn_output = attention_outputs
+
 
         # 后续处理保持不变
         attn_output = gate_msa.unsqueeze(1) * attn_output
         hidden_states += attn_output
         norm_hidden_states = self.norm2(hidden_states)
-        norm_hidden_states = norm_hidden_states * (1 + scale_mlp.unsqueeze(1)) + shift_mlp.unsqueeze(1)
+        norm_hidden_states = norm_hidden_states * (1 + scale_mlp[:, None]) + shift_mlp[:, None]
+        
         ff_output = self.ff(norm_hidden_states)
-        hidden_states += gate_mlp.unsqueeze(1) * ff_output
+        ff_output = gate_mlp.unsqueeze(1) * ff_output
+
+        hidden_states = hidden_states + ff_output
+        if len(attention_outputs) == 3:
+            hidden_states = hidden_states + ip_attn_output
 
         context_attn_output = c_gate_msa.unsqueeze(1) * context_attn_output
         encoder_hidden_states += context_attn_output
         norm_encoder_hidden_states = self.norm2_context(encoder_hidden_states)
-        norm_encoder_hidden_states = norm_encoder_hidden_states * (1 + c_scale_mlp.unsqueeze(1)) + c_shift_mlp.unsqueeze(1)
+        norm_encoder_hidden_states = norm_encoder_hidden_states * (1 + c_scale_mlp[:, None]) + c_shift_mlp[:, None]
         context_ff_output = self.ff_context(norm_encoder_hidden_states)
-        encoder_hidden_states += c_gate_mlp.unsqueeze(1) * context_ff_output
+        encoder_hidden_states = encoder_hidden_states + c_gate_mlp.unsqueeze(1) * context_ff_output
+
+        if encoder_hidden_states.dtype == paddle.float16:
+            encoder_hidden_states = paddle.clip(encoder_hidden_states, -65504, 65504)
 
         return encoder_hidden_states, hidden_states
 
@@ -204,6 +218,39 @@ class FluxTransformer2DModel(ModelMixin, ConfigMixin):
         self.proj_out = nn.Linear(self.inner_dim, patch_size * patch_size * self.out_channels, bias_attr=True)
         self.gradient_checkpointing = False
 
+
+    @property
+    def attn_processors(self) -> Dict[str, AttentionProcessor]:
+        processors = {}
+
+        def fn_recursive_add_processors(name: str, module: nn.Layer, processors: dict):
+            if hasattr(module, "get_processor"):
+                processors[f"{name}.processor"] = module.get_processor()
+            for sub_name, child in module.named_children():
+                fn_recursive_add_processors(f"{name}.{sub_name}", child, processors)
+
+        for name, module in self.named_children():
+            fn_recursive_add_processors(name, module, processors)
+        return processors
+
+    def set_attn_processor(self, processor: Union[AttentionProcessor, Dict[str, AttentionProcessor]]):
+        count = len(self.attn_processors.keys())
+        if isinstance(processor, dict) and len(processor) != count:
+            raise ValueError(f"Expected {count} processors, got {len(processor)}")
+
+        def fn_recursive_attn_processor(name: str, module: nn.Layer, processor):
+            if hasattr(module, "set_processor"):
+                if isinstance(processor, dict):
+                    module.set_processor(processor.pop(f"{name}.processor"))
+                else:
+                    module.set_processor(processor)
+            for sub_name, child in module.named_children():
+                fn_recursive_attn_processor(f"{name}.{sub_name}", child, processor)
+
+        for name, module in self.named_children():
+            fn_recursive_attn_processor(name, module, processor)
+
+
     def forward(
         self,
         hidden_states: paddle.Tensor,
@@ -221,33 +268,76 @@ class FluxTransformer2DModel(ModelMixin, ConfigMixin):
     ) -> Union[paddle.Tensor, Transformer2DModelOutput]:
         # 保持原有前向逻辑
         if joint_attention_kwargs is not None:
+            joint_attention_kwargs = joint_attention_kwargs.copy()
             lora_scale = joint_attention_kwargs.pop("scale", 1.0)
         else:
             lora_scale = 1.0
 
         if USE_PEFT_BACKEND:
+            # weight the lora layers by setting `lora_scale` for each PEFT layer
             scale_lora_layers(self, lora_scale)
+        else:
+            if joint_attention_kwargs is not None and joint_attention_kwargs.get("scale", None) is not None:
+                logger.warning(
+                    "Passing `scale` via `joint_attention_kwargs` when not using the PEFT backend is ineffective."
+                )
 
         hidden_states = self.x_embedder(hidden_states)
         timestep = timestep.astype(hidden_states.dtype) * 1000
         guidance = guidance.astype(hidden_states.dtype) * 1000 if guidance is not None else None
 
         temb = self.time_text_embed(timestep, pooled_projections) if guidance is None else \
-               self.time_text_embed(timestep, guidance, pooled_projections)
+            self.time_text_embed(timestep, guidance, pooled_projections)
         
         encoder_hidden_states = self.context_embedder(encoder_hidden_states)
+
+        if txt_ids.ndim == 3:
+            logger.warning(
+                "Passing `txt_ids` 3d torch.Tensor is deprecated."
+                "Please remove the batch dimension and pass it as a 2d torch Tensor"
+            )
+            txt_ids = txt_ids[0]
+        if img_ids.ndim == 3:
+            logger.warning(
+                "Passing `img_ids` 3d torch.Tensor is deprecated."
+                "Please remove the batch dimension and pass it as a 2d torch Tensor"
+            )
+            img_ids = img_ids[0]
+
+
         ids = paddle.concat((txt_ids, img_ids), axis=0)
         image_rotary_emb = self.pos_embed(ids)
 
+        if joint_attention_kwargs is not None and "ip_adapter_image_embeds" in joint_attention_kwargs:
+            ip_adapter_image_embeds = joint_attention_kwargs.pop("ip_adapter_image_embeds")
+            ip_hidden_states = self.encoder_hid_proj(ip_adapter_image_embeds)
+            joint_attention_kwargs.update({"ip_hidden_states": ip_hidden_states})
+
         # 处理transformer blocks
         for index_block, block in enumerate(self.transformer_blocks):
-            encoder_hidden_states, hidden_states = block(
-                hidden_states=hidden_states,
-                encoder_hidden_states=encoder_hidden_states,
-                temb=temb,
-                joint_attention_kwargs=joint_attention_kwargs,
-            )
-
+            if self.gradient_checkpointing and self.training and not use_old_recompute(): 
+                def create_custom_forward(self, module, return_dict=None):
+                    def custom_forward(*inputs):
+                        if return_dict is not None:
+                            return module(*inputs, return_dict=return_dict)
+                        return module(*inputs)
+                    return custom_forward    
+                
+                encoder_hidden_states, hidden_states = recompute(
+                    create_custom_forward(block),
+                    hidden_states,
+                    encoder_hidden_states,
+                    temb,
+                    image_rotary_emb,
+                )
+            else:
+                encoder_hidden_states, hidden_states = block(
+                    hidden_states=hidden_states,
+                    encoder_hidden_states=encoder_hidden_states,
+                    temb=temb,
+                    image_rotary_emb=image_rotary_emb,
+                    joint_attention_kwargs=joint_attention_kwargs,
+                )
             # 控制网络残差连接
             if controlnet_block_samples is not None:
                 interval_control = len(self.transformer_blocks) // len(controlnet_block_samples)
@@ -258,12 +348,30 @@ class FluxTransformer2DModel(ModelMixin, ConfigMixin):
 
         # 处理single transformer blocks
         hidden_states = paddle.concat([encoder_hidden_states, hidden_states], axis=1)
+
         for index_block, block in enumerate(self.single_transformer_blocks):
-            hidden_states = block(
-                hidden_states=hidden_states,
-                temb=temb,
-                joint_attention_kwargs=joint_attention_kwargs,
-            )
+            if self.gradient_checkpointing and self.training and not use_old_recompute(): 
+                def create_custom_forward(self, module, return_dict=None):
+                    def custom_forward(*inputs):
+                        if return_dict is not None:
+                            return module(*inputs, return_dict=return_dict)
+                        return module(*inputs)
+                    return custom_forward    
+                
+                hidden_states = recompute(
+                    create_custom_forward(block),
+                    hidden_states,
+                    temb,
+                    image_rotary_emb,
+                )
+            else:
+                hidden_states = block(
+                    hidden_states=hidden_states,
+                    encoder_hidden_states=encoder_hidden_states,
+                    temb=temb,
+                    image_rotary_emb=image_rotary_emb,
+                    joint_attention_kwargs=joint_attention_kwargs,
+                )
 
             if controlnet_single_block_samples is not None:
                 interval_control = len(self.single_transformer_blocks) // len(controlnet_single_block_samples)
@@ -274,5 +382,12 @@ class FluxTransformer2DModel(ModelMixin, ConfigMixin):
         hidden_states = hidden_states[:, encoder_hidden_states.shape[1]:, ...]
         hidden_states = self.norm_out(hidden_states, temb)
         output = self.proj_out(hidden_states)
+
+        if USE_PEFT_BACKEND:
+            # remove `lora_scale` from each PEFT layer
+            unscale_lora_layers(self, lora_scale)
+
+        if not return_dict:
+            return (output,)
 
         return Transformer2DModelOutput(sample=output) if return_dict else (output,)

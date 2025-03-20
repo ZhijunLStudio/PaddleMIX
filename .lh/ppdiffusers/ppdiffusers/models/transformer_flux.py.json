@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 8,
             "patches": [
                 {
                     "date": 1742121491554,
@@ -20,6 +20,26 @@
                 {
                     "date": 1742227480791,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -39,8 +39,9 @@\n         self.proj_mlp = nn.Linear(dim, self.mlp_hidden_dim)\n         self.act_mlp = nn.GELU(approximate=\"tanh\")\n         self.proj_out = nn.Linear(dim + self.mlp_hidden_dim, dim)\n \n+\n         # 使用基础AttentionProcessor\n         self.attn = Attention(\n             query_dim=dim,\n             cross_attention_dim=None,\n@@ -273,5 +274,5 @@\n         hidden_states = hidden_states[:, encoder_hidden_states.shape[1]:, ...]\n         hidden_states = self.norm_out(hidden_states, temb)\n         output = self.proj_out(hidden_states)\n \n-        return Transformer2DModelOutput(sample=output) if return_dict else (output,)\n\\ No newline at end of file\n+        return Transformer2DModelOutput(sample=output) if return_dict else (output,)\n"
+                },
+                {
+                    "date": 1742317830804,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -17,9 +17,9 @@\n import numpy as np\n import paddle\n import paddle.nn as nn\n \n-from ...configuration_utils import ConfigMixin, register_to_config\n+from ..configuration_utils import ConfigMixin, register_to_config\n from ...models.attention import FeedForward\n from ...models.attention_processor import Attention, AttentionProcessor\n from ...models.modeling_utils import ModelMixin\n from ...models.normalization import AdaLayerNormContinuous, AdaLayerNormZero, AdaLayerNormZeroSingle\n"
+                },
+                {
+                    "date": 1742317837437,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,14 +18,14 @@\n import paddle\n import paddle.nn as nn\n \n from ..configuration_utils import ConfigMixin, register_to_config\n-from ...models.attention import FeedForward\n-from ...models.attention_processor import Attention, AttentionProcessor\n-from ...models.modeling_utils import ModelMixin\n-from ...models.normalization import AdaLayerNormContinuous, AdaLayerNormZero, AdaLayerNormZeroSingle\n-from ...utils import USE_PEFT_BACKEND, logging, scale_lora_layers, unscale_lora_layers\n-from ..embeddings import CombinedTimestepGuidanceTextProjEmbeddings, CombinedTimestepTextProjEmbeddings, FluxPosEmbed\n+from ..models.attention import FeedForward\n+from ..models.attention_processor import Attention, AttentionProcessor\n+from ..models.modeling_utils import ModelMixin\n+from ..models.normalization import AdaLayerNormContinuous, AdaLayerNormZero, AdaLayerNormZeroSingle\n+from ..utils import USE_PEFT_BACKEND, logging, scale_lora_layers, unscale_lora_layers\n+from .embeddings import CombinedTimestepGuidanceTextProjEmbeddings, CombinedTimestepTextProjEmbeddings, FluxPosEmbed\n from ..modeling_outputs import Transformer2DModelOutput\n \n logger = logging.get_logger(__name__)  # pylint: disable=invalid-name\n \n"
+                },
+                {
+                    "date": 1742394228129,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -13,10 +13,9 @@\n # limitations under the License.\n \n from typing import Any, Dict, Optional, Tuple, Union\n \n-import numpy as np\n-import paddle\n+import numpy as npimport paddle\n import paddle.nn as nn\n \n from ..configuration_utils import ConfigMixin, register_to_config\n from ..models.attention import FeedForward\n@@ -24,9 +23,9 @@\n from ..models.modeling_utils import ModelMixin\n from ..models.normalization import AdaLayerNormContinuous, AdaLayerNormZero, AdaLayerNormZeroSingle\n from ..utils import USE_PEFT_BACKEND, logging, scale_lora_layers, unscale_lora_layers\n from .embeddings import CombinedTimestepGuidanceTextProjEmbeddings, CombinedTimestepTextProjEmbeddings, FluxPosEmbed\n-from ..modeling_outputs import Transformer2DModelOutput\n+from .modeling_outputs import Transformer2DModelOutput\n \n logger = logging.get_logger(__name__)  # pylint: disable=invalid-name\n \n \n"
+                },
+                {
+                    "date": 1742394279116,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -18,9 +18,8 @@\n import paddle\n import paddle.nn as nn\n \n from ..configuration_utils import ConfigMixin, register_to_config\n-\n from ..models.attention_processor import Attention, AttentionProcessor\n from ..models.modeling_utils import ModelMixin\n from ..models.normalization import AdaLayerNormContinuous, AdaLayerNormZero, AdaLayerNormZeroSingle\n from ..utils import USE_PEFT_BACKEND, logging, scale_lora_layers, unscale_lora_layers\n"
+                },
+                {
+                    "date": 1742394571339,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -22,9 +22,9 @@\n from ..models.attention_processor import Attention, AttentionProcessor\n from ..models.modeling_utils import ModelMixin\n # from ..models.normalization import AdaLayerNormContinuous, AdaLayerNormZero, AdaLayerNormZeroSingle\n from ..utils import USE_PEFT_BACKEND, BaseOutput, logging, scale_lora_layers, unscale_lora_layers\n-from .controlnet import ControlNetConditioningEmbedding, zero_module\n+from ..controlnets.controlnet import ControlNetConditioningEmbedding, zero_module\n from .embeddings import CombinedTimestepGuidanceTextProjEmbeddings, CombinedTimestepTextProjEmbeddings, FluxPosEmbed\n from .modeling_outputs import Transformer2DModelOutput\n \n logger = logging.get_logger(__name__)  # pylint: disable=invalid-name\n"
                 }
             ],
             "date": 1742121491554,

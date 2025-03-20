@@ -84,3 +84,4 @@ log/
 .benchmarks/
 .mypy_cache/
 .history
+.lh
