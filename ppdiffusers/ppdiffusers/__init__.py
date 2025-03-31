@@ -152,7 +152,9 @@ else:
             "SD3ControlNetModel",
             "SD3MultiControlNetModel",
             # new add
+            "FluxTransformer2DModel",
             "FluxControlNetModel",
+            "FluxMultiControlNetModel",
             # new add
             "VCtrlModel",
         ]
@@ -396,6 +398,8 @@ else:
             # new add
             "ImgToVideoSDPipeline",
             "VideoToVideoModelscopePipeline",
+            # new add
+            "FluxControlNetPipeline",
         ]
     )
 
@@ -527,6 +531,8 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             SD3MultiControlNetModel,
             SD3Transformer2DModel,
             FluxControlNetModel,
+            FluxMultiControlNetModel,
+            FluxTransformer2DModel,
             STUNetModel,
             T2IAdapter,
             T5FilmDecoder,
@@ -756,6 +762,7 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             WuerstchenCombinedPipeline,
             WuerstchenDecoderPipeline,
             WuerstchenPriorPipeline,
+            FluxControlNetPipeline,
         )
 
     try:

@@ -32,6 +32,7 @@ _dummy_objects = {}
 _import_structure = {
     "controlnet": [],
     "controlnet_sd3": [],
+    "controlnet_flux": [],
     "latent_diffusion": [],
     "stable_diffusion": [],
     "stable_diffusion_xl": [],
@@ -122,6 +123,11 @@ else:
         [
             "StableDiffusion3ControlNetPipeline",
             "StableDiffusion3ControlNetInpaintingPipeline",
+        ]
+    )
+    _import_structure["controlnet_flux"].extend(
+        [
+            "FluxControlNetPipeline",
         ]
     )
     _import_structure["deepfloyd_if"] = [
@@ -402,6 +408,9 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
         from .controlnet_sd3 import (
             StableDiffusion3ControlNetInpaintingPipeline,
             StableDiffusion3ControlNetPipeline,
+        )
+        from .controlnet_flux import (
+            FluxControlNetPipeline,
         )
         from .deepfloyd_if import (
             IFImg2ImgPipeline,

@@ -19,10 +19,9 @@ try:
         raise OptionalDependencyNotAvailable()
 except OptionalDependencyNotAvailable:
     from ...utils import dummy_paddle_and_paddlenlp_objects  # noqa F403
-
     _dummy_objects.update(get_objects_from_module(dummy_paddle_and_paddlenlp_objects))
 else:
-    _import_structure["pipeline_flux_control"] = ["FluxControlPipeline"]
+    _import_structure["pipeline_flux_controlnet"] = ["FluxControlNetPipeline"]
 
 
 if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
@@ -32,7 +31,7 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
     except OptionalDependencyNotAvailable:
         from ...utils.dummy_paddle_and_paddlenlp_objects import *  # noqa F403
     else:
-        from .pipeline_flux_control import FluxControlPipeline
+        from .pipeline_flux_controlnet import FluxControlNetPipeline
 
 else:
     import sys
