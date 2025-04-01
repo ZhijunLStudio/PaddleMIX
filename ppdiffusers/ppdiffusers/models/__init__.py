@@ -61,6 +61,8 @@ if is_paddle_available():
     # NOTE, new add
     _import_structure["controlnet_sd3"] = ["SD3ControlNetModel", "SD3MultiControlNetModel"]
     # NOTE, new add
+    _import_structure["controlnet_flux"] = ["FluxControlNetModel", "FluxMultiControlNetModel"]
+    # NOTE, new add
     _import_structure["vctrl"] = ["VCtrlModel"]
     _import_structure["cogvideox_transformer_3d_vctrl"] = ["CogVideoXTransformer3DVCtrlModel"]
     _import_structure["transformer_hunyuan_video"] = ["HunyuanVideoTransformer3DModel"]
@@ -82,6 +84,7 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
         from .consistency_decoder_vae import ConsistencyDecoderVAE
         from .controlnet import ControlNetModel
         from .controlnet_sd3 import SD3ControlNetModel, SD3MultiControlNetModel
+        from .controlnet_flux import FluxControlNetModel, FluxMultiControlNetModel
         from .dit_llama import DiTLLaMA2DModel
         from .dit_llama_t2i import DiTLLaMAT2IModel
         from .dual_transformer_2d import DualTransformer2DModel

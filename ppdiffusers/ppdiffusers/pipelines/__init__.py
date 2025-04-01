@@ -32,6 +32,7 @@ _dummy_objects = {}
 _import_structure = {
     "controlnet": [],
     "controlnet_sd3": [],
+    "controlnet_flux": [],
     "latent_diffusion": [],
     "stable_diffusion": [],
     "stable_diffusion_xl": [],
@@ -143,6 +144,11 @@ else:
         "FluxPriorReduxPipeline",
         "ReduxImageEncoder",
     ]
+    _import_structure["controlnet_flux"].extend(
+        [
+            "FluxControlNetPipeline",
+        ]
+    )
     _import_structure["kandinsky"] = [
         "KandinskyCombinedPipeline",
         "KandinskyImg2ImgCombinedPipeline",
@@ -152,6 +158,7 @@ else:
         "KandinskyPipeline",
         "KandinskyPriorPipeline",
     ]
+
     _import_structure["kandinsky2_2"] = [
         "KandinskyV22CombinedPipeline",
         "KandinskyV22ControlnetImg2ImgPipeline",
@@ -432,6 +439,9 @@ if TYPE_CHECKING or PPDIFFUSERS_SLOW_IMPORT:
             FluxPipeline,
             FluxPriorReduxPipeline,
             ReduxImageEncoder,
+        )
+        from .controlnet_flux import (
+            FluxControlNetPipeline,
         )
         from .img_to_video import ImgToVideoSDPipeline, ImgToVideoSDPipelineOutput
         from .kandinsky import (
