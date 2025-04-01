@@ -21,7 +21,7 @@ from ppdiffusers.utils import load_image
 # load pipeline
 controlnet = FluxControlNetModel.from_pretrained("/data/home/lizhijun/llm/flux-hf/models/FLUX.1-dev-Controlnet-Canny-pd", paddle_dtype=paddle.float16)
 pipe = FluxControlNetPipeline.from_pretrained(
-    "black-forest-labs/FLUX.1-dev", controlnet=controlnet, paddle_dtype=paddle.float16
+    "/data/home/lizhijun/llm/flux-hf/models/flux-dev-pd", controlnet=controlnet, paddle_dtype=paddle.float16
 )
 
 
